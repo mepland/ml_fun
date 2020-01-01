@@ -1,0 +1,12 @@
+jupyterlab
+pandas
+numpy
+matplotlib
+scipy
+tqdm
+
+torch
+torchvision
+
+# xgboost
+scikit-learn

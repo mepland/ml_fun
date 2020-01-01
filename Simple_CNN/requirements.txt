@@ -1,8 +1,0 @@
-jupyterlab
-numpy
-pandas
-tqdm
-
-torch
-torchvision
-
