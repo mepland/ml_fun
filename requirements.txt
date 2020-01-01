@@ -4,7 +4,6 @@ numpy
 matplotlib
 scipy
 tqdm
-lmdb
 
 torch
 torchvision
