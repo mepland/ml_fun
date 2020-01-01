@@ -110,7 +110,7 @@ train_transformations = transforms.Compose([
 batch_size = 32
 
 # Load the training set
-train_set = CIFAR10(root='./data', train=True, transform=train_transformations, download=True)
+train_set = CIFAR10(root='../data', train=True, transform=train_transformations, download=True)
 
 # Create a loader for the training set
 dataloader_train = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4)
@@ -123,7 +123,7 @@ test_transformations = transforms.Compose([
 ])
 
 # Load the test set, note that train is set to False
-test_set = CIFAR10(root='./data', train=False, transform=test_transformations, download=True)
+test_set = CIFAR10(root='../data', train=False, transform=test_transformations, download=True)
 
 # Create a loader for the test set, note that both shuffle is set to false for the test loader
 dataloader_test = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4)

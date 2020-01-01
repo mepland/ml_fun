@@ -7,3 +7,5 @@ pkl_results
 *style_file*.html
 *.pdf
 *.png
+
+data/
