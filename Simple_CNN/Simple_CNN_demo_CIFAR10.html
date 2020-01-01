@@ -13222,7 +13222,7 @@ div#notebook {
 <span class="n">train_set</span> <span class="o">=</span> <span class="n">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;./data&#39;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">train_transformations</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Create a loader for the training set</span>
-<span class="n">train_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">train_set</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">dataloader_train</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">train_set</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="c1"># Define transformations for the test set</span>
 <span class="n">test_transformations</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
@@ -13235,32 +13235,23 @@ div#notebook {
 <span class="n">test_set</span> <span class="o">=</span> <span class="n">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;./data&#39;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">test_transformations</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Create a loader for the test set, note that both shuffle is set to false for the test loader</span>
-<span class="n">test_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">test_set</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">dataloader_test</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">test_set</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="c1"># Check if gpu support is available</span>
 <span class="n">cuda_avail</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;cuda_avail = </span><span class="si">{cuda_avail}</span><span class="s1">&#39;</span><span class="p">)</span>
 
 <span class="c1"># Create model, optimizer and loss function</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">SimpleNet</span><span class="p">(</span><span class="n">num_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="n">cuda_avail</span><span class="p">:</span>
     <span class="n">model</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING Running on CPU!&#39;</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">)</span>
 <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;cuda_avail = </span><span class="si">{cuda_avail}</span><span class="s1">&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13324,7 +13315,7 @@ div#notebook {
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">test</span><span class="p">():</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
     <span class="n">test_acc</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">test_loader</span><span class="p">):</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="n">dataloader_test</span><span class="p">:</span>
 
         <span class="k">if</span> <span class="n">cuda_avail</span><span class="p">:</span>
             <span class="n">images</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
@@ -13336,8 +13327,8 @@ div#notebook {
         <span class="c1">#prediction = prediction.cpu().numpy() -  labels is on gpu, just keep everything there...</span>
         <span class="n">test_acc</span> <span class="o">+=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prediction</span> <span class="o">==</span> <span class="n">labels</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
-    <span class="c1"># Compute the average acc and loss over all 10000 test images</span>
-    <span class="n">test_acc</span> <span class="o">=</span> <span class="n">test_acc</span> <span class="o">/</span> <span class="mi">10000</span>
+    <span class="c1"># Compute the average acc and loss over all test images</span>
+    <span class="n">test_acc</span> <span class="o">=</span> <span class="n">test_acc</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataloader_test</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">test_acc</span>
 </pre></div>
@@ -13360,7 +13351,7 @@ div#notebook {
         <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
         <span class="n">train_acc</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="n">train_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">train_loader</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dataloader_train</span><span class="p">):</span>
             <span class="c1"># Move images and labels to gpu if available</span>
             <span class="k">if</span> <span class="n">cuda_avail</span><span class="p">:</span>
                 <span class="n">images</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
@@ -13386,9 +13377,9 @@ div#notebook {
         <span class="c1"># Call the learning rate adjustment function</span>
         <span class="n">adjust_learning_rate</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span>
 
-        <span class="c1"># Compute the average acc and loss over all 50000 training images</span>
-        <span class="n">train_acc</span> <span class="o">=</span> <span class="n">train_acc</span> <span class="o">/</span> <span class="mi">50000</span>
-        <span class="n">train_loss</span> <span class="o">=</span> <span class="n">train_loss</span> <span class="o">/</span> <span class="mi">50000</span>
+        <span class="c1"># Compute the average acc and loss over all training images</span>
+        <span class="n">train_acc</span> <span class="o">=</span> <span class="n">train_acc</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataloader_train</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">train_loss</span> <span class="o">=</span> <span class="n">train_loss</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataloader_train</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
 
         <span class="c1"># Evaluate on the test set</span>
         <span class="n">test_acc</span> <span class="o">=</span> <span class="n">test</span><span class="p">()</span>

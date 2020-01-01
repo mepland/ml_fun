@@ -113,7 +113,7 @@ batch_size = 32
 train_set = CIFAR10(root='./data', train=True, transform=train_transformations, download=True)
 
 # Create a loader for the training set
-train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4)
+dataloader_train = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4)
 
 # Define transformations for the test set
 test_transformations = transforms.Compose([
@@ -126,25 +126,23 @@ test_transformations = transforms.Compose([
 test_set = CIFAR10(root='./data', train=False, transform=test_transformations, download=True)
 
 # Create a loader for the test set, note that both shuffle is set to false for the test loader
-test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4)
+dataloader_test = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4)
 
 # Check if gpu support is available
 cuda_avail = torch.cuda.is_available()
+print(f'cuda_avail = {cuda_avail}')
 
 # Create model, optimizer and loss function
 model = SimpleNet(num_classes=10)
 
 if cuda_avail:
     model.cuda()
+else:
+    print('WARNING Running on CPU!')
+    model.cpu()
 
 optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
 loss_fn = nn.CrossEntropyLoss()
-
-
-# In[ ]:
-
-
-print(f'cuda_avail = {cuda_avail}')
 
 
 # In[ ]:
@@ -187,7 +185,7 @@ def save_models(epoch):
 def test():
     model.eval()
     test_acc = 0.0
-    for i, (images, labels) in enumerate(test_loader):
+    for (images, labels) in dataloader_test:
 
         if cuda_avail:
             images = Variable(images.cuda())
@@ -199,8 +197,8 @@ def test():
         #prediction = prediction.cpu().numpy() -  labels is on gpu, just keep everything there...
         test_acc += torch.sum(prediction == labels.data)
 
-    # Compute the average acc and loss over all 10000 test images
-    test_acc = test_acc / 10000
+    # Compute the average acc and loss over all test images
+    test_acc = test_acc / len(dataloader_test.dataset)
 
     return test_acc
 
@@ -216,7 +214,7 @@ def train(num_epochs):
         model.train()
         train_acc = 0.0
         train_loss = 0.0
-        for i, (images, labels) in enumerate(train_loader):
+        for i, (images, labels) in enumerate(dataloader_train):
             # Move images and labels to gpu if available
             if cuda_avail:
                 images = Variable(images.cuda())
@@ -242,9 +240,9 @@ def train(num_epochs):
         # Call the learning rate adjustment function
         adjust_learning_rate(epoch)
 
-        # Compute the average acc and loss over all 50000 training images
-        train_acc = train_acc / 50000
-        train_loss = train_loss / 50000
+        # Compute the average acc and loss over all training images
+        train_acc = train_acc / len(dataloader_train.dataset)
+        train_loss = train_loss / len(dataloader_train.dataset)
 
         # Evaluate on the test set
         test_acc = test()
