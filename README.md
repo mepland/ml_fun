@@ -18,8 +18,8 @@ git clone --recurse-submodules https://github.com/mepland/ml_fun.git
 ## Installing Dependencies
 It is recommended to work in a [python virtual environment](https://realpython.com/python-virtual-environments-a-primer/) to avoid clashes with other installed software. If you do not wish to use a virtual environment you can usually just run the first few cells of the notebook in question - useful when running on cloud-based virtual machines.
 ```bash
-python -m venv ~/.venvs/newenv
-source ~/.venvs/newenv/bin/activate
+python -m venv ~/.venvs/ml_fun
+source ~/.venvs/ml_fun/bin/activate
 pip install -r requirements.txt
 ```
 
