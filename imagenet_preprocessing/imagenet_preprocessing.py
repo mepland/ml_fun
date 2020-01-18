@@ -7,6 +7,7 @@ import multiprocessing as mp
 
 from PIL import Image
 
+########################################################
 # setup resapling algos as dict TODO test all
 resampling_algos = {
 'bicubic': Image.BICUBIC,
@@ -17,78 +18,10 @@ resampling_algos = {
 'nearest': Image.NEAREST,
 }
 
-########################################################
-# setup args
-class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
-	pass
-
-parser = argparse.ArgumentParser(description='Author: Matthew Epland', formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
-
-parser.add_argument('-i', '--input_path', dest='input_path', type=str, default='./train', help='Path to top level directory containing imagenet synset (class) subdirectories.')
-parser.add_argument('-o', '--output_path', dest='output_path', type=str, default='./processed_images/train', help='Path to output directory.')
-parser.add_argument('-m', '--map_path', dest='map_path', type=str, default='./ILSVRC2017_devkit/devkit/data/map_clsloc.txt', help='Path to map_clsloc.txt map file in devkit.')
-parser.add_argument('-s', '--size', dest='target_res', type=int, default=128, help='Size of output image (128 produces a 128x128 image)')
-parser.add_argument('-a', '--algorithm', dest='resampling_algo', type=str, default='bicubic', help='Algorithm used for resampling: bicubic, bilinear, box, hamming, lanczos, nearest')
-parser.add_argument('--flat_dir', dest='flat_dir', action='count', default=0, help='Input directory has no subdirectory structure, just images.')
-parser.add_argument('-j', '--processes', dest='n_processes', type=int, default=1, help='Number of sub-processes to process different sysnet (class) subdirectories in parallel')
-parser.add_argument('--allow_upscale', dest='allow_upscale', action='count', default=0, help='Enable upscaling.')
-# parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output.')
-
-# parse the arguments, throw errors if missing any
-args = parser.parse_args()
-
-# assign to normal variables for convenience
-input_path = args.input_path
-output_path = args.output_path
-map_path = args.map_path
-target_res = args.target_res
-resampling_algo = args.resampling_algo
-flat_dir = args.flat_dir
-n_processes = args.n_processes
-allow_upscale = args.allow_upscale
-
-# do some sanity checking
-if target_res < 16 or 2048 < target_res:
-	raise ValueError('Are you sure you want to run with an output image size of {target_res}? If so, you will have to edit the code...')
-
-if resampling_algo not in resampling_algos.keys():
-	raise ValueError('Unknown resampling algorithm {resampling_algo}!')
-
-n_cores = mp.cpu_count()
-if n_processes > n_cores:
-	raise ValueError('Trying to use {n_processes} processes but only have {n_cores} cores!')
-
-########################################################
-# build helper dicts from map_clsloc.txt
-class_dir_map = {}
-# id_class_map = {}
-
-if not flat_dir:
-	try:
-		with open(map_path, 'rb') as f:
-			for row in f.readlines():
-				row = row.strip()
-				arr = row.decode('utf-8').split(' ')
-
-				WNID = arr[0]
-				class_id = int(arr[1])
-				class_name = arr[2]
-
-				if class_id == 429 and class_name == 'crane':
-					class_name = 'crane_bird'
-				elif class_id == 782 and class_name == 'maillot':
-					class_name = 'maillot_1'
-				elif class_id == 977 and class_name == 'maillot':
-					class_name = 'maillot_2'
-
-				class_dir_map[WNID] = class_name
-				# id_class_map[class_id] = class_name
-	except:
-		raise IOError(f'Could not find map_clsloc.txt at provided path: {map_path}')
 
 ########################################################
 # function to process one image
-def process_im(in_path, out_path, fname):
+def process_im(target_res, allow_upscale, resampling_algo, in_path, out_path, fname):
 	im = Image.open(os.path.join(in_path, fname))
 
 	if not allow_upscale:
@@ -105,7 +38,7 @@ def process_im(in_path, out_path, fname):
 
 ########################################################
 # function to process one dir, in parallel
-def process_dir(src_class_dir):
+def process_dir(target_res, allow_upscale, resampling_algo, input_path, output_path, class_dir_map, src_class_dir):
 	out_class_dirs = class_dir_map.get(src_class_dir, None)
 	if out_class_dirs is None:
 		print(f'ERROR could not find the class name for {src_class_dir}!!')
@@ -126,36 +59,112 @@ def process_dir(src_class_dir):
 
 	for fname in fnames:
 		try:
-			process_im(os.path.join(input_path, src_class_dir), os.path.join(output_path, out_class_dirs), fname)
+			process_im(target_res, allow_upscale, resampling_algo, os.path.join(input_path, src_class_dir), os.path.join(output_path, out_class_dirs), fname)
 		except OSError as err:
 			print(f'Error processing {os.path.join(input_path, src_class_dir, fname)}!')
 			with open('./preprocessing.log', 'a') as f:
 				f.write(f'Error processing {os.path.join(input_path, src_class_dir, fname)}!\n')
 
 ########################################################
-# actually run
-print(f'n_cores = {n_cores}, using n_processes = {n_processes}')
-pool = mp.Pool(processes=n_processes)
+########################################################
+if __name__ == '__main__':
 
-if flat_dir:
-	fnames = [fname for fname in os.listdir(input_path) if not os.path.isdir(os.path.join(input_path, fname))]
-	if len(fnames) == 0:
-		raise IOError(f'Provided input path {input_path} contained no images')
+	########################################################
+	# setup args
+	class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
+		pass
 
-	os.makedirs(output_path)
+	parser = argparse.ArgumentParser(description='Author: Matthew Epland', formatter_class=lambda prog: CustomFormatter(prog, max_help_position=30))
 
-	process_im_partial = partial(process_im, input_path, output_path)
+	parser.add_argument('-i', '--input_path', dest='input_path', type=str, default='C:/imagenet/ILSVRC2012_img/train', help='Path to top level directory containing imagenet synset (class) subdirectories.')
+	parser.add_argument('-o', '--output_path', dest='output_path', type=str, default='C:/imagenet/processed_images/train', help='Path to output directory.')
+	parser.add_argument('-m', '--map_path', dest='map_path', type=str, default='C:\imagenet\ILSVRC2017_devkit\data\map_clsloc.txt', help='Path to map_clsloc.txt map file in devkit.')
+	parser.add_argument('-s', '--size', dest='target_res', type=int, default=128, help='Size of output image (128 produces a 128x128 image)')
+	parser.add_argument('-a', '--algorithm', dest='resampling_algo', type=str, default='bicubic', help='Algorithm used for resampling: bicubic, bilinear, box, hamming, lanczos, nearest')
+	parser.add_argument('--flat_dir', dest='flat_dir', action='count', default=0, help='Input directory has no subdirectory structure, just images.')
+	parser.add_argument('-j', '--processes', dest='n_processes', type=int, default=1, help='Number of sub-processes to process different sysnet (class) subdirectories in parallel')
+	parser.add_argument('--allow_upscale', dest='allow_upscale', action='count', default=0, help='Enable upscaling.')
+	# parser.add_argument('-v','--verbose', dest='verbose', action='count', default=0, help='Enable verbose output.')
 
-	for _ in tqdm(pool.imap_unordered(process_im_partial, fnames), total=len(fnames)):
-	    pass
+	# parse the arguments, throw errors if missing any
+	args = parser.parse_args()
 
-else:
-	input_class_dirs = [_dir for _dir in os.listdir(input_path) if os.path.isdir(os.path.join(input_path, _dir))]
-	if len(input_class_dirs) == 0:
-		raise IOError(f'Provided input path {input_path} contained no subdirectories')
+	# assign to normal variables for convenience
+	input_path = args.input_path
+	output_path = args.output_path
+	map_path = args.map_path
+	target_res = args.target_res
+	resampling_algo = args.resampling_algo
+	flat_dir = args.flat_dir
+	n_processes = args.n_processes
+	allow_upscale = args.allow_upscale
 
-	for _ in tqdm(pool.imap_unordered(process_dir, input_class_dirs), total=len(input_class_dirs), desc='Class subdirectories'):
-	    pass
+	# do some sanity checking
+	if target_res < 16 or 2048 < target_res:
+		raise ValueError('Are you sure you want to run with an output image size of {target_res}? If so, you will have to edit the code...')
 
-pool.close()
-pool.join()
+	if resampling_algo not in resampling_algos.keys():
+		raise ValueError('Unknown resampling algorithm {resampling_algo}!')
+
+	n_cores = mp.cpu_count()
+	if n_processes > n_cores:
+		raise ValueError('Trying to use {n_processes} processes but only have {n_cores} cores!')
+
+	########################################################
+	# build helper dicts from map_clsloc.txt
+	class_dir_map = {}
+	# id_class_map = {}
+
+	if not flat_dir:
+		try:
+			with open(map_path, 'rb') as f:
+				for row in f.readlines():
+					row = row.strip()
+					arr = row.decode('utf-8').split(' ')
+
+					WNID = arr[0]
+					class_id = int(arr[1])
+					class_name = arr[2]
+
+					if class_id == 429 and class_name == 'crane':
+						class_name = 'crane_bird'
+					elif class_id == 782 and class_name == 'maillot':
+						class_name = 'maillot_1'
+					elif class_id == 977 and class_name == 'maillot':
+						class_name = 'maillot_2'
+
+					class_dir_map[WNID] = class_name
+					# id_class_map[class_id] = class_name
+		except:
+			raise IOError(f'Could not find map_clsloc.txt at provided path: {map_path}')
+
+	########################################################
+	# actually run
+	print(f'n_cores = {n_cores}, using n_processes = {n_processes}')
+	pool = mp.Pool(processes=n_processes)
+
+	if flat_dir:
+		fnames = [fname for fname in os.listdir(input_path) if not os.path.isdir(os.path.join(input_path, fname))]
+		if len(fnames) == 0:
+			raise IOError(f'Provided input path {input_path} contained no images')
+
+		if not os.path.exists(output_path):
+			os.makedirs(output_path)
+
+		process_im_partial = partial(process_im, target_res, allow_upscale, resampling_algo, input_path, output_path)
+
+		for _ in tqdm(pool.imap_unordered(process_im_partial, fnames), total=len(fnames), desc='Images'):
+		    pass
+
+	else:
+		input_class_dirs = [_dir for _dir in os.listdir(input_path) if os.path.isdir(os.path.join(input_path, _dir))]
+		if len(input_class_dirs) == 0:
+			raise IOError(f'Provided input path {input_path} contained no subdirectories')
+
+		process_dir_partial = partial(process_dir, target_res, allow_upscale, resampling_algo, input_path, output_path, class_dir_map)
+
+		for _ in tqdm(pool.imap_unordered(process_dir_partial, input_class_dirs), total=len(input_class_dirs), desc='Class subdirectories'):
+		    pass
+
+	pool.close()
+	pool.join()
