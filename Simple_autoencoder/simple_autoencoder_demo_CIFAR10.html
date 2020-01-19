@@ -13082,15 +13082,30 @@ div#notebook {
 
 </div>
 </div>
-</div>
+</div>import sys
+get_ipython().system('{sys.executable} -m pip install --upgrade pip');
+get_ipython().system('{sys.executable} -m pip install -r ../requirements.txt');
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-<span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{sys.executable}</span><span class="s1"> -m pip install --upgrade pip&#39;</span><span class="p">);</span>
-<span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{sys.executable}</span><span class="s1"> -m pip install -r ../requirements.txt&#39;</span><span class="p">);</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">natsort</span> <span class="kn">import</span> <span class="n">natsorted</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torchvision</span> <span class="k">as</span> <span class="nn">tv</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">torch.autograd</span> <span class="kn">import</span> <span class="n">Variable</span>
+<span class="kn">from</span> <span class="nn">torchvision.transforms</span> <span class="kn">import</span> <span class="n">transforms</span>
+<span class="kn">from</span> <span class="nn">torchvision.utils</span> <span class="kn">import</span> <span class="n">save_image</span>
+
+<span class="c1"># from torchvision.datasets import CIFAR10</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span>
 </pre></div>
 
     </div>
@@ -13103,20 +13118,23 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check if gpu support is available</span>
+<span class="n">cuda_avail</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;cuda_avail = </span><span class="si">{cuda_avail}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
 
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">torchvision</span> <span class="k">as</span> <span class="nn">tv</span>
-<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
-<span class="kn">from</span> <span class="nn">torch.autograd</span> <span class="kn">import</span> <span class="n">Variable</span>
-<span class="kn">from</span> <span class="nn">torchvision.transforms</span> <span class="kn">import</span> <span class="n">transforms</span>
-<span class="kn">from</span> <span class="nn">torchvision.utils</span> <span class="kn">import</span> <span class="n">save_image</span>
+    </div>
+</div>
+</div>
 
-<span class="c1"># from torchvision.datasets import CIFAR10</span>
-<span class="c1"># from torch.utils.data import DataLoader</span>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">batch_size</span><span class="o">=</span><span class="mi">1024</span>
+<span class="c1"># im_res=128</span>
 </pre></div>
 
     </div>
@@ -13144,38 +13162,78 @@ div#notebook {
 </div>
 
 </div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<hr>
+<h3 id="Compute-Normalization-Factors">Compute Normalization Factors<a class="anchor-link" href="#Compute-Normalization-Factors">&#182;</a></h3>
+</div>
+</div>
+</div># get mean and std deviations per channel for later normalization
+# do in minibatches, then take the mean over all the minibatches
+# adapted from: https://forums.fast.ai/t/image-normalization-in-pytorch/7534/7
+
+dl_unnormalized = torch.utils.data.DataLoader(
+    tv.datasets.ImageFolder(root='C:/imagenet/processed_images/train', transform=transforms.ToTensor()),
+    batch_size=batch_size, shuffle=False, num_workers=8
+)
+
+pop_mean = []
+pop_std0 = []
+# pop_std1 = []
+for (images, labels) in tqdm(dl_unnormalized, desc='Minibatch'):
+    # shape = (batch_size, 3, im_res, im_res)
+    numpy_images = images.numpy()
+
+    # shape = (3,)
+    batch_mean = np.mean(numpy_images, axis=(0,2,3))
+    batch_std0 = np.std(numpy_images, axis=(0,2,3))
+    # batch_std1 = np.std(numpy_images, axis=(0,2,3), ddof=1)
+
+    pop_mean.append(batch_mean)
+    pop_std0.append(batch_std0)
+    # pop_std1.append(batch_std1)
+
+# shape = (num_minibatches, 3) -> (mean across 0th axis) -> shape (3,)
+pop_mean = np.array(pop_mean).mean(axis=0)
+pop_std0 = np.array(pop_std0).mean(axis=0)
+# pop_std1 = np.array(pop_std1).mean(axis=0)
+
+print(f'pop_mean = {pop_mean}')
+print(f'pop_std0 = {pop_std0}')
+# print(f'pop_std1 = {pop_std1}')
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># get mean and std deviations per channel for later normalization</span>
-<span class="c1"># do in minibatches, then take the mean over all the minibatches</span>
-<span class="c1"># adapted from: https://forums.fast.ai/t/image-normalization-in-pytorch/7534/7</span>
-<span class="n">dataloader_unnormalized</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span>
-    <span class="n">tv</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;../data&#39;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">()),</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># use normalization results computed earlier</span>
+<span class="n">pop_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.48399296</span><span class="p">,</span> <span class="mf">0.45583892</span><span class="p">,</span> <span class="mf">0.41094956</span><span class="p">])</span>
+<span class="n">pop_std0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.27657014</span><span class="p">,</span> <span class="mf">0.27107376</span><span class="p">,</span> <span class="mf">0.28344524</span><span class="p">])</span>
+<span class="c1"># pop_std1 = np.array()</span>
+</pre></div>
 
-<span class="n">pop_mean</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">pop_std0</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="c1"># pop_std1 = []</span>
-<span class="k">for</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">dataloader_unnormalized</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Minibatch&#39;</span><span class="p">):</span>
-    <span class="c1"># shape = (minibatch_size, 3, 32, 32)</span>
-    <span class="n">numpy_images</span> <span class="o">=</span> <span class="n">images</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    </div>
+</div>
+</div>
 
-    <span class="c1"># shape = (3,)</span>
-    <span class="n">batch_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">numpy_images</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
-    <span class="n">batch_std0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">numpy_images</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
-    <span class="c1"># batch_std1 = np.std(numpy_images, axis=(0,2,3), ddof=1)</span>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<hr>
+<h1 id="Load-and-manipulate-data">Load and manipulate data<a class="anchor-link" href="#Load-and-manipulate-data">&#182;</a></h1>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span><span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>  <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">pop_mean</span><span class="p">,</span> <span class="n">pop_std0</span><span class="p">)])</span>
 
-    <span class="n">pop_mean</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">batch_mean</span><span class="p">)</span>
-    <span class="n">pop_std0</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">batch_std0</span><span class="p">)</span>
-    <span class="c1"># pop_std1.append(batch_std1)</span>
-
-<span class="c1"># shape = (num_minibatches, 3) -&gt; (mean across 0th axis) -&gt; shape (3,)</span>
-<span class="n">pop_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pop_mean</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">pop_std0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pop_std0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="c1"># pop_std1 = np.array(pop_std1).mean(axis=0)</span>
+<span class="n">ds_all_classes</span> <span class="o">=</span> <span class="n">tv</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ImageFolder</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;C:/imagenet/processed_images/train&#39;</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13188,8 +13246,10 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># pop_mean</span>
-<span class="c1"># pop_mean = np.array([0.4916779 , 0.4823491 , 0.44675845], dtype=np.float32)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">class_to_idx</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">({})</span>
+<span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">ds_all_classes</span><span class="o">.</span><span class="n">class_to_idx</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">class_to_idx</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="n">v</span>
+<span class="n">class_to_idx</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">class_to_idx</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">))</span>
 </pre></div>
 
     </div>
@@ -13202,8 +13262,8 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># pop_std0</span>
-<span class="c1"># pop_std0 = np.array([0.24713232, 0.24348037, 0.26160604], dtype=np.float32)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># From https://www.kaggle.com/c/dog-breed-identification/data, plus a few extra</span>
+<span class="n">possible_dog_classes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;affenpinscher&#39;</span><span class="p">,</span> <span class="s1">&#39;afghan_hound&#39;</span><span class="p">,</span> <span class="s1">&#39;african_hunting_dog&#39;</span><span class="p">,</span> <span class="s1">&#39;airedale&#39;</span><span class="p">,</span> <span class="s1">&#39;american_staffordshire_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;appenzeller&#39;</span><span class="p">,</span> <span class="s1">&#39;australian_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;basenji&#39;</span><span class="p">,</span> <span class="s1">&#39;basset&#39;</span><span class="p">,</span> <span class="s1">&#39;beagle&#39;</span><span class="p">,</span> <span class="s1">&#39;bedlington_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;bernese_mountain_dog&#39;</span><span class="p">,</span> <span class="s1">&#39;black-and-tan_coonhound&#39;</span><span class="p">,</span> <span class="s1">&#39;blenheim_spaniel&#39;</span><span class="p">,</span> <span class="s1">&#39;bloodhound&#39;</span><span class="p">,</span> <span class="s1">&#39;bluetick&#39;</span><span class="p">,</span> <span class="s1">&#39;border_collie&#39;</span><span class="p">,</span> <span class="s1">&#39;border_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;borzoi&#39;</span><span class="p">,</span> <span class="s1">&#39;boston_bull&#39;</span><span class="p">,</span> <span class="s1">&#39;bouvier_des_flandres&#39;</span><span class="p">,</span> <span class="s1">&#39;boxer&#39;</span><span class="p">,</span> <span class="s1">&#39;brabancon_griffon&#39;</span><span class="p">,</span> <span class="s1">&#39;briard&#39;</span><span class="p">,</span> <span class="s1">&#39;brittany_spaniel&#39;</span><span class="p">,</span> <span class="s1">&#39;bull_mastiff&#39;</span><span class="p">,</span> <span class="s1">&#39;cairn&#39;</span><span class="p">,</span> <span class="s1">&#39;cardigan&#39;</span><span class="p">,</span> <span class="s1">&#39;chesapeake_bay_retriever&#39;</span><span class="p">,</span> <span class="s1">&#39;chihuahua&#39;</span><span class="p">,</span> <span class="s1">&#39;chow&#39;</span><span class="p">,</span> <span class="s1">&#39;clumber&#39;</span><span class="p">,</span> <span class="s1">&#39;cocker_spaniel&#39;</span><span class="p">,</span> <span class="s1">&#39;collie&#39;</span><span class="p">,</span> <span class="s1">&#39;curly-coated_retriever&#39;</span><span class="p">,</span> <span class="s1">&#39;dandie_dinmont&#39;</span><span class="p">,</span> <span class="s1">&#39;dhole&#39;</span><span class="p">,</span> <span class="s1">&#39;dingo&#39;</span><span class="p">,</span> <span class="s1">&#39;doberman&#39;</span><span class="p">,</span> <span class="s1">&#39;english_foxhound&#39;</span><span class="p">,</span> <span class="s1">&#39;english_setter&#39;</span><span class="p">,</span> <span class="s1">&#39;english_springer&#39;</span><span class="p">,</span> <span class="s1">&#39;entlebucher&#39;</span><span class="p">,</span> <span class="s1">&#39;eskimo_dog&#39;</span><span class="p">,</span> <span class="s1">&#39;flat-coated_retriever&#39;</span><span class="p">,</span> <span class="s1">&#39;french_bulldog&#39;</span><span class="p">,</span> <span class="s1">&#39;german_shepherd&#39;</span><span class="p">,</span> <span class="s1">&#39;german_short-haired_pointer&#39;</span><span class="p">,</span> <span class="s1">&#39;giant_schnauzer&#39;</span><span class="p">,</span> <span class="s1">&#39;golden_retriever&#39;</span><span class="p">,</span> <span class="s1">&#39;gordon_setter&#39;</span><span class="p">,</span> <span class="s1">&#39;great_dane&#39;</span><span class="p">,</span> <span class="s1">&#39;great_pyrenees&#39;</span><span class="p">,</span> <span class="s1">&#39;greater_swiss_mountain_dog&#39;</span><span class="p">,</span> <span class="s1">&#39;groenendael&#39;</span><span class="p">,</span> <span class="s1">&#39;ibizan_hound&#39;</span><span class="p">,</span> <span class="s1">&#39;irish_setter&#39;</span><span class="p">,</span> <span class="s1">&#39;irish_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;irish_water_spaniel&#39;</span><span class="p">,</span> <span class="s1">&#39;irish_wolfhound&#39;</span><span class="p">,</span> <span class="s1">&#39;italian_greyhound&#39;</span><span class="p">,</span> <span class="s1">&#39;japanese_spaniel&#39;</span><span class="p">,</span> <span class="s1">&#39;keeshond&#39;</span><span class="p">,</span> <span class="s1">&#39;kelpie&#39;</span><span class="p">,</span> <span class="s1">&#39;kerry_blue_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;komondor&#39;</span><span class="p">,</span> <span class="s1">&#39;kuvasz&#39;</span><span class="p">,</span> <span class="s1">&#39;labrador_retriever&#39;</span><span class="p">,</span> <span class="s1">&#39;lakeland_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;leonberg&#39;</span><span class="p">,</span> <span class="s1">&#39;lhasa&#39;</span><span class="p">,</span> <span class="s1">&#39;malamute&#39;</span><span class="p">,</span> <span class="s1">&#39;malinois&#39;</span><span class="p">,</span> <span class="s1">&#39;maltese_dog&#39;</span><span class="p">,</span> <span class="s1">&#39;mexican_hairless&#39;</span><span class="p">,</span> <span class="s1">&#39;miniature_pinscher&#39;</span><span class="p">,</span> <span class="s1">&#39;miniature_poodle&#39;</span><span class="p">,</span> <span class="s1">&#39;miniature_schnauzer&#39;</span><span class="p">,</span> <span class="s1">&#39;newfoundland&#39;</span><span class="p">,</span> <span class="s1">&#39;norfolk_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;norwegian_elkhound&#39;</span><span class="p">,</span> <span class="s1">&#39;norwich_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;old_english_sheepdog&#39;</span><span class="p">,</span> <span class="s1">&#39;otterhound&#39;</span><span class="p">,</span> <span class="s1">&#39;papillon&#39;</span><span class="p">,</span> <span class="s1">&#39;pekinese&#39;</span><span class="p">,</span> <span class="s1">&#39;pembroke&#39;</span><span class="p">,</span> <span class="s1">&#39;pomeranian&#39;</span><span class="p">,</span> <span class="s1">&#39;pug&#39;</span><span class="p">,</span> <span class="s1">&#39;redbone&#39;</span><span class="p">,</span> <span class="s1">&#39;rhodesian_ridgeback&#39;</span><span class="p">,</span> <span class="s1">&#39;rottweiler&#39;</span><span class="p">,</span> <span class="s1">&#39;saint_bernard&#39;</span><span class="p">,</span> <span class="s1">&#39;saluki&#39;</span><span class="p">,</span> <span class="s1">&#39;samoyed&#39;</span><span class="p">,</span> <span class="s1">&#39;schipperke&#39;</span><span class="p">,</span> <span class="s1">&#39;scotch_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;scottish_deerhound&#39;</span><span class="p">,</span> <span class="s1">&#39;sealyham_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;shetland_sheepdog&#39;</span><span class="p">,</span> <span class="s1">&#39;shih-tzu&#39;</span><span class="p">,</span> <span class="s1">&#39;siberian_husky&#39;</span><span class="p">,</span> <span class="s1">&#39;silky_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;soft-coated_wheaten_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;staffordshire_bullterrier&#39;</span><span class="p">,</span> <span class="s1">&#39;standard_poodle&#39;</span><span class="p">,</span> <span class="s1">&#39;standard_schnauzer&#39;</span><span class="p">,</span> <span class="s1">&#39;sussex_spaniel&#39;</span><span class="p">,</span> <span class="s1">&#39;tibetan_mastiff&#39;</span><span class="p">,</span> <span class="s1">&#39;tibetan_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;toy_poodle&#39;</span><span class="p">,</span> <span class="s1">&#39;toy_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;vizsla&#39;</span><span class="p">,</span> <span class="s1">&#39;walker_hound&#39;</span><span class="p">,</span> <span class="s1">&#39;weimaraner&#39;</span><span class="p">,</span> <span class="s1">&#39;welsh_springer_spaniel&#39;</span><span class="p">,</span> <span class="s1">&#39;west_highland_white_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;whippet&#39;</span><span class="p">,</span> <span class="s1">&#39;wire-haired_fox_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;yorkshire_terrier&#39;</span><span class="p">,</span> <span class="s1">&#39;dalmatian&#39;</span><span class="p">,</span> <span class="s1">&#39;coyote&#39;</span><span class="p">,</span> <span class="s1">&#39;timber_wolf&#39;</span><span class="p">,</span> <span class="s1">&#39;white_wolf&#39;</span><span class="p">,]</span>
 </pre></div>
 
     </div>
@@ -13216,14 +13276,11 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Load and transform the data</span>
-<span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span><span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>  <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">pop_mean</span><span class="p">,</span> <span class="n">pop_std0</span><span class="p">)])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">imagenet_dog_classes</span> <span class="o">=</span> <span class="n">natsorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">class_to_idx</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">possible_dog_classes</span><span class="p">))))</span>
 
-<span class="n">trainset</span> <span class="o">=</span> <span class="n">tv</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;../data&#39;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
-<span class="n">dataloader_train</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">trainset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-
-<span class="n">testset</span> <span class="o">=</span> <span class="n">tv</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;../data&#39;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">)</span>
-<span class="n">dataloader_test</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">testset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">imagenet_dog_classes_idx</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">imagenet_dog_classes</span><span class="p">:</span>
+    <span class="n">imagenet_dog_classes_idx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">class_to_idx</span><span class="p">[</span><span class="n">c</span><span class="p">])</span>
 </pre></div>
 
     </div>
@@ -13236,28 +13293,80 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">classes</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;plane&#39;</span><span class="p">,</span> <span class="s1">&#39;car&#39;</span><span class="p">,</span> <span class="s1">&#39;bird&#39;</span><span class="p">,</span> <span class="s1">&#39;cat&#39;</span><span class="p">,</span> <span class="s1">&#39;deer&#39;</span><span class="p">,</span> <span class="s1">&#39;dog&#39;</span><span class="p">,</span> <span class="s1">&#39;frog&#39;</span><span class="p">,</span> <span class="s1">&#39;horse&#39;</span><span class="p">,</span> <span class="s1">&#39;ship&#39;</span><span class="p">,</span> <span class="s1">&#39;truck&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">class_idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">imagenet_dog_classes_idx</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">idx_dogs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span> <span class="o">==</span> <span class="n">class_idx</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">idx_dogs</span> <span class="o">+=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span> <span class="o">==</span> <span class="n">class_idx</span>
 </pre></div>
 
     </div>
 </div>
 </div>
 
-</div>dataiter = iter(dataloader_unnormalized)
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ds_dogs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Subset</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">idx_dogs</span><span class="o">==</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="k">del</span> <span class="n">ds_all_classes</span>
+<span class="n">ds_all_classes</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">n_dogs_all</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ds_dogs</span><span class="o">.</span><span class="n">indices</span><span class="p">)</span>
+
+<span class="n">n_dogs_test</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.15</span><span class="o">*</span><span class="n">n_dogs_all</span><span class="p">)</span>
+<span class="n">n_dogs_val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.15</span><span class="o">*</span><span class="n">n_dogs_all</span><span class="p">)</span>
+<span class="n">n_dogs_train</span> <span class="o">=</span> <span class="n">n_dogs_all</span> <span class="o">-</span> <span class="n">n_dogs_test</span> <span class="o">-</span> <span class="n">n_dogs_val</span>
+
+<span class="n">ds_dogs_test</span><span class="p">,</span> <span class="n">ds_dogs_val</span><span class="p">,</span> <span class="n">ds_dogs_train</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">random_split</span><span class="p">(</span><span class="n">ds_dogs</span><span class="p">,</span> <span class="p">[</span><span class="n">n_dogs_test</span><span class="p">,</span> <span class="n">n_dogs_val</span><span class="p">,</span> <span class="n">n_dogs_train</span><span class="p">])</span>
+
+<span class="k">del</span> <span class="n">ds_dogs</span>
+<span class="n">ds_dogs</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dl_dogs_test</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">ds_dogs_test</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">dl_dogs_val</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">ds_dogs_val</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">dl_dogs_train</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">ds_dogs_train</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>dataiter = iter(dataloader_train_dogs)
 images, labels = dataiter.next()
-imshow(images[0])
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
+imshow(images[110])
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<hr>
+<h1 id="Create-the-Model">Create the Model<a class="anchor-link" href="#Create-the-Model">&#182;</a></h1>
 </div>
 </div>
-
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -13285,21 +13394,6 @@ imshow(images[0])
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">x</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check if gpu support is available</span>
-<span class="n">cuda_avail</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;cuda_avail = </span><span class="si">{cuda_avail}</span><span class="s1">&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13354,7 +13448,7 @@ imshow(images[0])
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s1">&#39;models&#39;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">save_models</span><span class="p">(</span><span class="n">epoch</span><span class="p">):</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="sa">f</span><span class="s1">&#39;models/autoencoder_cifar10model_</span><span class="si">{epoch}</span><span class="s1">.model&#39;</span><span class="p">)</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="sa">f</span><span class="s1">&#39;models/autoencoder_</span><span class="si">{epoch}</span><span class="s1">.model&#39;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checkpoint saved&#39;</span><span class="p">)</span>
 </pre></div>
 
@@ -13368,24 +13462,25 @@ imshow(images[0])
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">test</span><span class="p">():</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">get_val_loss</span><span class="p">():</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-    <span class="n">test_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="n">dataloader_test</span><span class="p">:</span>
+    <span class="n">val_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="n">dl_dogs_val</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">cuda_avail</span><span class="p">:</span>
             <span class="n">images</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">images</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">images</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
 
-        <span class="c1"># apply model and compute loss using images from the test set</span>
+        <span class="c1"># apply model and compute loss using images from the val set</span>
         <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">images</span><span class="p">)</span>
-        <span class="n">test_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">images</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">val_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">images</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
-    <span class="c1"># Compute the average loss over all test images</span>
-    <span class="n">test_loss</span> <span class="o">=</span> <span class="n">test_loss</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataloader_test</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
+    <span class="c1"># Compute the average loss over all val images</span>
+    <span class="c1"># val_loss = val_loss / len(dl_dogs_val.dataset)</span>
+    <span class="n">val_loss</span> <span class="o">=</span> <span class="n">val_loss</span> <span class="o">/</span> <span class="n">n_dogs_val</span>
 
-    <span class="k">return</span> <span class="n">test_loss</span>
+    <span class="k">return</span> <span class="n">val_loss</span>
 </pre></div>
 
     </div>
@@ -13406,7 +13501,7 @@ imshow(images[0])
         <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
         <span class="n">train_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="c1"># for (images, labels) in tqdm(dataloader_train, desc=&#39;Minibatch&#39;):</span>
-        <span class="k">for</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="n">dataloader_train</span><span class="p">:</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="n">dl_dogs_train</span><span class="p">:</span>
 
             <span class="c1"># Move images and labels to gpu if available</span>
             <span class="k">if</span> <span class="n">cuda_avail</span><span class="p">:</span>
@@ -13434,18 +13529,19 @@ imshow(images[0])
         <span class="n">adjust_learning_rate</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span>
 
         <span class="c1"># Compute the average acc and loss over all training images</span>
-        <span class="n">train_loss</span> <span class="o">=</span> <span class="n">train_loss</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataloader_train</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="c1"># train_loss = train_loss / len(dl_dogs_train.dataset)</span>
+        <span class="n">train_loss</span> <span class="o">=</span> <span class="n">train_loss</span> <span class="o">/</span> <span class="n">n_dogs_train</span>
 
-        <span class="c1"># Evaluate on the test set</span>
-        <span class="n">test_loss</span> <span class="o">=</span> <span class="n">test</span><span class="p">()</span>
+        <span class="c1"># Evaluate on the val set</span>
+        <span class="n">val_loss</span> <span class="o">=</span> <span class="n">get_val_loss</span><span class="p">()</span>
 
-        <span class="c1"># Save the model if the test loss is less than our current best</span>
-        <span class="k">if</span> <span class="n">epoch</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">test_loss</span> <span class="o">&lt;</span> <span class="n">best_loss</span><span class="p">:</span>
+        <span class="c1"># Save the model if the val loss is less than our current best</span>
+        <span class="k">if</span> <span class="n">epoch</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">val_loss</span> <span class="o">&lt;</span> <span class="n">best_loss</span><span class="p">:</span>
             <span class="n">save_models</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span>
-            <span class="n">best_loss</span> <span class="o">=</span> <span class="n">test_loss</span>
+            <span class="n">best_loss</span> <span class="o">=</span> <span class="n">val_loss</span>
 
         <span class="c1"># Print the metrics</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{epoch}</span><span class="s1">, Train Loss: </span><span class="si">{train_loss}</span><span class="s1">, Test Loss: </span><span class="si">{test_loss}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{epoch}</span><span class="s1">, Train Loss: </span><span class="si">{train_loss}</span><span class="s1">, Val Loss: </span><span class="si">{val_loss}</span><span class="s1">&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13458,27 +13554,7 @@ imshow(images[0])
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">train</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Other-data-sets">Other data sets<a class="anchor-link" href="#Other-data-sets">&#182;</a></h1>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">stl10</span> <span class="o">=</span> <span class="n">tv</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">STL10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;../data&#39;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="n">folds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">train</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13491,98 +13567,7 @@ imshow(images[0])
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">stl10</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">stl10</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">imshow</span><span class="p">(</span><span class="n">stl10</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cifar10</span> <span class="o">=</span> <span class="n">tv</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">CIFAR10</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;../data&#39;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">())</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cifar10</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cifar10</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">imshow</span><span class="p">(</span><span class="n">cifar10</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># imagenet = tv.datasets.ImageNet(root=&#39;TODO&#39;, split=&#39;train&#39;, download=True) # Can&#39;t download - need to torrent</span>
+<div class=" highlight hl-ipython3"><pre><span></span> 
 </pre></div>
 
     </div>

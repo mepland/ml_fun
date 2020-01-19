@@ -4,6 +4,7 @@ numpy
 matplotlib
 scipy
 tqdm
+natsort
 
 torch
 torchvision
