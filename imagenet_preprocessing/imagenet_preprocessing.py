@@ -1,11 +1,14 @@
 import os
 import argparse
+import warnings
+warnings.filterwarnings('error')
 from functools import partial
 from tqdm import tqdm
 
 import multiprocessing as mp
 
 from PIL import Image
+# import piexif
 
 ########################################################
 # setup resapling algos as dict TODO test all
@@ -18,23 +21,40 @@ resampling_algos = {
 'nearest': Image.NEAREST,
 }
 
-
 ########################################################
 # function to process one image
 def process_im(target_res, allow_upscale, resampling_algo, in_path, out_path, fname):
-	im = Image.open(os.path.join(in_path, fname))
+	try:
+		f_path = os.path.join(in_path, fname)
+		# piexif.remove(f_path) # drop any exif data, at least one file has issues with corrupted data - very slow!
 
-	if not allow_upscale:
-		width, height = im.size
-		min_side = min(width, height)
-		if min_side < target_res:
-			return
+		im = Image.open(f_path)
 
-	im = im.resize((target_res, target_res), resampling_algos[resampling_algo])
+		if not allow_upscale:
+			width, height = im.size
+			min_side = min(width, height)
+			if min_side < target_res:
+				return
 
-	# drop extension to be safe
-	fname_base, _ = os.path.splitext(fname)
-	im.save(os.path.join(out_path, f'{fname_base}.jpg'), 'JPEG')
+		im = im.resize((target_res, target_res), resampling_algos[resampling_algo])
+
+		# quick check that the image is not empty
+		if im.getbbox() is None:
+			print(f"Can not save {(out_path, f'{fname_base}.jpg')} as it has no bounding box / is completely empty!")
+			return None
+
+		# drop alpha channel to be safe
+		im = im.convert('RGB')
+
+		# drop extension to be safe
+		fname_base, _ = os.path.splitext(fname)
+		im.save(os.path.join(out_path, f'{fname_base}.jpg'), 'JPEG')
+
+	except (Exception, Warning) as err:
+		error_msg = f'Error processing {os.path.join(in_path, fname)}!\n{str(err)}'
+		print(error_msg)
+		with open('./preprocessing.log', 'a') as f:
+			f.write(f'{error_msg}\n')
 
 ########################################################
 # function to process one dir, in parallel
@@ -46,8 +66,7 @@ def process_dir(target_res, allow_upscale, resampling_algo, input_path, output_p
 			f.write(f'Error could not find the class name for {src_class_dir}\n')
 		return
 
-	if not os.path.exists(os.path.join(output_path, out_class_dirs)):
-		os.makedirs(os.path.join(output_path, out_class_dirs))
+	os.makedirs(os.path.join(output_path, out_class_dirs), exist_ok=True)
 
 	fnames = [fname for fname in os.listdir(os.path.join(input_path, src_class_dir)) if not os.path.isdir(os.path.join(input_path, src_class_dir, fname))]
 
@@ -58,12 +77,7 @@ def process_dir(target_res, allow_upscale, resampling_algo, input_path, output_p
 		return
 
 	for fname in fnames:
-		try:
 			process_im(target_res, allow_upscale, resampling_algo, os.path.join(input_path, src_class_dir), os.path.join(output_path, out_class_dirs), fname)
-		except OSError as err:
-			print(f'Error processing {os.path.join(input_path, src_class_dir, fname)}!')
-			with open('./preprocessing.log', 'a') as f:
-				f.write(f'Error processing {os.path.join(input_path, src_class_dir, fname)}!\n')
 
 ########################################################
 ########################################################
@@ -148,8 +162,7 @@ if __name__ == '__main__':
 		if len(fnames) == 0:
 			raise IOError(f'Provided input path {input_path} contained no images')
 
-		if not os.path.exists(output_path):
-			os.makedirs(output_path)
+		os.makedirs(output_path, exist_ok=True)
 
 		process_im_partial = partial(process_im, target_res, allow_upscale, resampling_algo, input_path, output_path)
 
@@ -158,6 +171,7 @@ if __name__ == '__main__':
 
 	else:
 		input_class_dirs = [_dir for _dir in os.listdir(input_path) if os.path.isdir(os.path.join(input_path, _dir))]
+
 		if len(input_class_dirs) == 0:
 			raise IOError(f'Provided input path {input_path} contained no subdirectories')
 
