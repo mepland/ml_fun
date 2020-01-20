@@ -2,7 +2,7 @@
 Matthew Epland, PhD  
 [phy.duke.edu/~mbe9](http://www.phy.duke.edu/~mbe9)  
 
-Holds small machine learning projects from my desktop, using pytorch and CUDA.  
+Holds machine learning projects built on my desktop, using pytorch and CUDA.  
 
 ## Cloning the Repository
 ssh  
@@ -23,7 +23,7 @@ source ~/.venvs/ml_fun/bin/activate
 pip install -r requirements.txt
 ```
 
-## Running the Notebook
+## Running Notebooks
 
 ```bash
 jupyter lab notebook_name.ipynb
