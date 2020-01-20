@@ -5,6 +5,7 @@ matplotlib
 scipy
 tqdm
 natsort
+humanize
 
 torch
 torchvision

@@ -10,9 +10,12 @@ get_ipython().system('{sys.executable} -m pip install -r ../requirements.txt');
 
 
 import os
+import gc
+import sys
 import numpy as np
 from collections import OrderedDict
 from natsort import natsorted
+import humanize
 from tqdm import tqdm
 
 import torch
@@ -31,28 +34,35 @@ from torch.utils.data import DataLoader
 
 
 # Check if gpu support is available
-cuda_avail = torch.cuda.is_available()
-print(f'cuda_avail = {cuda_avail}')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f'device = {device}')
 
 
 # In[ ]:
 
 
-batch_size=1024
-# im_res=128
+batch_size=256
+im_res=128
 
 
 # In[ ]:
 
 
-import matplotlib.pyplot as plt
-import numpy as np
+def test_mem():
+    cuda_mem_alloc = torch.cuda.memory_allocated() # bytes
+    print(f'CUDA memory allocated: {humanize.naturalsize(cuda_mem_alloc)}')
+    for obj in gc.get_objects():
+        try:
+            if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                print(f'type: {type(obj)}, dimensional size: {obj.size()}') # , memory size: {humanize.naturalsize(sys.getsizeof(obj))}') - always 72...
+        except:
+            pass
 
-def imshow(img):
-    # img = img / 2 + 0.5 # unnormalize TODO
-    npimg = img.numpy()
-    plt.imshow(np.transpose(npimg, (1, 2, 0)))
-    plt.show()
+
+# In[ ]:
+
+
+# test_mem()
 
 
 # ***
@@ -151,8 +161,8 @@ for i,class_idx in enumerate(imagenet_dog_classes_idx):
 
 ds_dogs = torch.utils.data.dataset.Subset(ds_all_classes, np.where(idx_dogs==1)[0])
 
-del ds_all_classes
-ds_all_classes = None
+# del idx_dogs
+# idx_dogs = None
 
 
 # In[ ]:
@@ -177,9 +187,7 @@ dl_dogs_test = torch.utils.data.DataLoader(ds_dogs_test, batch_size=batch_size, 
 dl_dogs_val = torch.utils.data.DataLoader(ds_dogs_val, batch_size=batch_size, shuffle=False, num_workers=8)
 dl_dogs_train = torch.utils.data.DataLoader(ds_dogs_train, batch_size=batch_size, shuffle=False, num_workers=8)
 
-dataiter = iter(dataloader_train_dogs)
-images, labels = dataiter.next()
-imshow(images[110])
+
 # ***
 # # Create the Model
 
@@ -191,33 +199,51 @@ class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder,self).__init__()
 
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 6, kernel_size=5),
-            nn.ReLU(True),
-            nn.Conv2d(6, 16, kernel_size=5),
-            nn.ReLU(True))
+        self.relu = nn.ReLU()
 
-        self.decoder = nn.Sequential(             
-            nn.ConvTranspose2d(16, 6, kernel_size=5),
-            nn.ReLU(True),
-            nn.ConvTranspose2d(6, 3, kernel_size=5),
-            nn.ReLU(True))
+        # Encoder
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(64)
+        self.conv4 = nn.Conv2d(64, 16, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn4 = nn.BatchNorm2d(16)
+
+        # Decoder
+        self.conv5 = nn.ConvTranspose2d(16, 64, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)
+        self.bn5 = nn.BatchNorm2d(64)
+        self.conv6 = nn.ConvTranspose2d(64, 32, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn6 = nn.BatchNorm2d(32)
+        self.conv7 = nn.ConvTranspose2d(32, 16, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)
+        self.bn7 = nn.BatchNorm2d(16)
+        self.conv8 = nn.ConvTranspose2d(16, 3, kernel_size=3, stride=1, padding=1, bias=False)
+
+    def encode(self, x):
+        conv1 = self.relu(self.bn1(self.conv1(x)))
+        conv2 = self.relu(self.bn2(self.conv2(conv1)))
+        conv3 = self.relu(self.bn3(self.conv3(conv2)))
+        conv4 = self.relu(self.bn4(self.conv4(conv3)))
+
+        return conv4
+
+    def decode(self, z):
+        conv5 = self.relu(self.bn5(self.conv5(z)))
+        conv6 = self.relu(self.bn6(self.conv6(conv5)))
+        conv7 = self.relu(self.bn7(self.conv7(conv6)))
+
+        return self.conv8(conv7).view(-1, 3, im_res, im_res)
 
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        return self.decode(self.encode(x))
 
 
 # In[ ]:
 
 
 model = Autoencoder()
-if cuda_avail:
-    model.cuda()
-else:
-    print('WARNING Running on CPU!')
-    model.cpu()
+model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), weight_decay=1e-5)
 loss_fn = nn.MSELoss()
@@ -239,9 +265,19 @@ def adjust_learning_rate(epoch, initial_lr=0.001, epoch_period=30, n_period_cap=
 
 os.makedirs('models', exist_ok=True)
 
-def save_models(epoch):
-    torch.save(model.state_dict(), f'models/autoencoder_{epoch}.model')
+def save_model(epoch, model_name='autoencoder'):
+    torch.save(model.state_dict(), f'models/{model_name}_{epoch}.model')
     print('Checkpoint saved')
+
+
+# In[ ]:
+
+
+def load_model(epoch, model_name='autoencoder'):
+    model = Autoencoder()
+    model.to(device)
+    model.load_state_dict(torch.load(f'models/{model_name}_{epoch}.model'))
+    return model
 
 
 # In[ ]:
@@ -251,10 +287,7 @@ def get_val_loss():
     model.eval()
     val_loss = 0.0
     for (images, labels) in dl_dogs_val:
-        if cuda_avail:
-            images = Variable(images.cuda())
-        else:
-            images = Variable(images.cpu())
+        images = images.to(device)
 
         # apply model and compute loss using images from the val set
         outputs = model(images)
@@ -282,10 +315,7 @@ def train(num_epochs):
         for (images, labels) in dl_dogs_train:
 
             # Move images and labels to gpu if available
-            if cuda_avail:
-                images = Variable(images.cuda())
-            else:
-                images = Variable(images.cpu())
+            images = images.to(device)
 
             # Clear all accumulated gradients
             optimizer.zero_grad()
@@ -315,7 +345,7 @@ def train(num_epochs):
 
         # Save the model if the val loss is less than our current best
         if epoch == 0 or val_loss < best_loss:
-            save_models(epoch)
+            save_model(epoch)
             best_loss = val_loss
 
         # Print the metrics
@@ -325,11 +355,126 @@ def train(num_epochs):
 # In[ ]:
 
 
-train(500)
+train(100)
+
+
+# ***
+# # Dev
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+def imshow(im, mean=pop_mean, std=pop_std0):
+    if isinstance(im, torch.Tensor):
+        im = im.numpy()
+    # unnormalize
+    if std is not None and mean is not None:
+        im_unnorm = np.zeros(im.shape)
+        for channel in range(im.shape[0]):
+            im_unnorm[channel] = std[channel]*im[channel] + mean[channel]
+        im = im_unnorm
+        del im_unnorm
+
+    # transpose from (channels, im_res, im_res) to (im_res, im_res, channels) for imshow plotting
+    im = np.transpose(im, (1, 2, 0))
+    
+    plt.imshow(im)
+    plt.show()
 
 
 # In[ ]:
 
 
 
+
+
+# In[ ]:
+
+
+images, labels = iter(dl_dogs_val).next()
+
+
+# In[ ]:
+
+
+imshow(images[10])
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+model = load_model(91)
+# model = load_model(1)
+
+
+# In[ ]:
+
+
+outputs = model(images.to(device))
+outputs_cpu = outputs.data.cpu().numpy()
+
+
+# In[ ]:
+
+
+imshow(outputs_cpu[10])
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+ds_NOT_dogs = torch.utils.data.dataset.Subset(ds_all_classes, np.where(idx_dogs!=1)[0])
+dl_NOT_dogs = torch.utils.data.DataLoader(ds_NOT_dogs, batch_size=100, shuffle=False, num_workers=8)
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+images, labels = iter(dl_NOT_dogs).next()
+
+
+# In[ ]:
+
+
+imshow(images[10])
+
+
+# In[ ]:
+
+
+outputs = model(images.to(device))
+outputs_cpu = outputs.data.cpu().numpy()
+
+
+# In[ ]:
+
+
+imshow(outputs_cpu[10])
 
