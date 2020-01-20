@@ -1,8 +1,13 @@
 jupyterlab
+
 pandas
 numpy
-matplotlib
 scipy
+
+matplotlib
+# seaborn
+palettable
+
 tqdm
 natsort
 humanize
@@ -11,4 +16,7 @@ torch
 torchvision
 
 # xgboost
-scikit-learn
+# scikit-learn
+# ipywidgets
+
+# networkx
