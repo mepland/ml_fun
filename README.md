@@ -23,6 +23,13 @@ source ~/.venvs/ml_fun/bin/activate
 pip install -r requirements.txt
 ```
 
+Note, to fully use ipywidgets (necessary for tqdm.notebook) you must also have nodejs installed and run some jupyter commands. See [here](https://ipywidgets.readthedocs.io/en/stable/user_install.html) for full details, basic commands below:
+```bash
+# conda install -c conda-forge nodejs # install nodejs on your system. If you are using conda, can get from conda-forge
+jupyter nbextension enable --py widgetsnbextension
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+```
+
 ## Running Notebooks
 
 ```bash

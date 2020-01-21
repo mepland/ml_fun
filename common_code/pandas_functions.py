@@ -1,6 +1,6 @@
-import os
-import pandas as pd
-import numpy as np
+########################################################
+# load package wide variables
+from .configs import *
 
 ########################################################
 def massage_dfp(dfp, target_fixed_cols, sort_by, sort_by_ascending):

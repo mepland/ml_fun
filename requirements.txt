@@ -1,4 +1,5 @@
 jupyterlab
+ipywidgets
 
 pandas
 numpy
@@ -17,6 +18,5 @@ torchvision
 
 # xgboost
 # scikit-learn
-# ipywidgets
 
 # networkx

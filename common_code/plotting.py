@@ -1,20 +1,11 @@
 # python
-import os
 from operator import itemgetter
-from collections import OrderedDict
 # import collections
 # from itertools import cycle
 # import logging
 # logging.basicConfig(level=logging.WARNING)
-
 # from ast import literal_eval
 # import warnings
-
-#########################################################
-# data
-import pandas as pd
-import numpy as np
-import datetime as dt
 
 ########################################################
 # plotting
@@ -641,7 +632,7 @@ def plot_rocs(models, m_path, fname='roc', tag='', dt_start=None, dt_stop=None, 
 		plt.close('all')
 
 ########################################################
-def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, mean_unnormalize=None, std_unnormalize=None, turn_off_axes=True, x_axis_params=None, y_axis_params=None):
+def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, mean_unnormalize=None, std_unnormalize=None, im_vsize=4, turn_off_axes=True, x_axis_params=None, y_axis_params=None):
 # x_axis_params={'axis_label':None, 'min':None, 'max':None}, y_axis_params={'axis_label':None, 'min':None, 'max':None}
 	if not isinstance(im, np.ndarray):
 		raise ValueError('Can not plot {type(im)}, convert to numpy array prior to plotting!')
@@ -655,13 +646,19 @@ def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=
 		y_axis_params = {}
 
 	fig, ax = plt.subplots(num=fname)
-	fig.set_size_inches(aspect_ratio_single*vsize, vsize)
+	if im_vsize is not None:
+		fig.set_size_inches(im_vsize, im_vsize)
+	else:
+		fig.set_size_inches(aspect_ratio_single*vsize, vsize)
 
 	# unnormalize
 	if std_unnormalize is not None and mean_unnormalize is not None:
 		im_unnorm = np.zeros(im.shape)
 		for channel in range(im.shape[0]):
 			im_unnorm[channel] = std_unnormalize[channel]*im[channel] + mean_unnormalize[channel]
+		# now clip to [0,1] to deal with any rounding errors and prevent later warning from imshow
+		im_unnorm = np.clip(im_unnorm, 0., 1.)
+
 		im = im_unnorm
 		del im_unnorm; im_unnorm=None;
 
@@ -669,7 +666,7 @@ def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=
 	im = np.transpose(im, (1, 2, 0))
 
 	# plot imagee
-	ax.imshow(im)
+	ax.imshow(im, aspect='equal')
 
 	# clean up
 	if turn_off_axes:
@@ -707,7 +704,7 @@ def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=
 		ann_text_origin_x = std_ann_x
 		ann_text_origin_y = std_ann_y
 		for text in ann_texts:
-			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=text.get('size', 18))
+			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=text.get('size', 18), backgroundcolor='white')
 
 	plt.tight_layout()
 	if inline:

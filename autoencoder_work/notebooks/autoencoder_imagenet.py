@@ -69,7 +69,8 @@ pop_std0 = np.array([0.27657014, 0.27107376, 0.28344524])
 
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(pop_mean, pop_std0)])
 
-ds_all_classes = tv.datasets.ImageFolder(root='C:/imagenet/processed_images/train', transform=transform)
+# ds_all_classes = tv.datasets.ImageFolder(root='C:/imagenet/processed_images/train', transform=transform)
+ds_all_classes = tv.datasets.ImageFolder(root='C:/imagenet/processed_images/train_subset_of_classes', transform=transform)
 
 
 # In[ ]:
@@ -136,6 +137,12 @@ dl_dogs_val = torch.utils.data.DataLoader(ds_dogs_val, batch_size=batch_size, sh
 dl_dogs_train = torch.utils.data.DataLoader(ds_dogs_train, batch_size=batch_size, shuffle=False, num_workers=8)
 
 
+# In[ ]:
+
+
+# test_mem()
+
+
 # ***
 # # Create the Model
 
@@ -149,6 +156,9 @@ class Autoencoder(nn.Module):
 
         self.relu = nn.ReLU()
 
+        # Latent Space size
+        latent_dim = 8
+
         # Encoder
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
@@ -156,11 +166,11 @@ class Autoencoder(nn.Module):
         self.bn2 = nn.BatchNorm2d(32)
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn3 = nn.BatchNorm2d(64)
-        self.conv4 = nn.Conv2d(64, 16, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn4 = nn.BatchNorm2d(16)
+        self.conv4 = nn.Conv2d(64, latent_dim, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn4 = nn.BatchNorm2d(latent_dim)
 
         # Decoder
-        self.conv5 = nn.ConvTranspose2d(16, 64, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)
+        self.conv5 = nn.ConvTranspose2d(latent_dim, 64, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)
         self.bn5 = nn.BatchNorm2d(64)
         self.conv6 = nn.ConvTranspose2d(64, 32, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn6 = nn.BatchNorm2d(32)
@@ -201,22 +211,40 @@ loss_fn = nn.MSELoss()
 # In[ ]:
 
 
-dfp_train_results = train_model(dl_dogs_train, dl_dogs_val
-model, optimizer, loss_fn,
+# test_mem()
+
+
+# In[ ]:
+
+
+# from common_code import *
+dfp_train_results = train_model(dl_dogs_train, dl_dogs_val,
+model, optimizer, loss_fn, device,
 model_name='autoencoder', models_path=models_path,
-max_epochs=100, do_es=True, es_min_val_per_improvement=0.005, es_rounds=10,
+max_epochs=100, do_es=True, es_min_val_per_improvement=0.005, es_epochs=10,
 do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
 )
 
 
-# ***
-# # Dev
-if isinstance(im, torch.Tensor):
-    im = im
 # In[ ]:
 
 
-plot_im(im, m_path, fname='im', tag='', inline=True, mean_unnormalize=pop_mean, std_unnormalize=pop_std0, turn_off_axes=True)
+dfp_train_results
+
+
+# In[ ]:
+
+
+# test_mem()
+
+
+# ***
+# # Dev
+
+# In[ ]:
+
+
+from common_code import *
 
 
 # In[ ]:
@@ -229,20 +257,15 @@ plot_im(im, m_path, fname='im', tag='', inline=True, mean_unnormalize=pop_mean, 
 
 
 images, _ = iter(dl_dogs_val).next()
-images = images.numpy()
+images_src = images.numpy()
 
 
 # In[ ]:
 
 
-plot_im(images[10], output_path, fname='im', tag='', inline=True, mean_unnormalize=pop_mean, std_unnormalize=pop_std0, turn_off_axes=True)
-
-
-# In[ ]:
-
-
-load_model(Autoencoder(), device, 91, 'autoencoder', models_path)
-# load_model(Autoencoder(), device, 1, 'autoencoder', models_path)
+model = Autoencoder()
+load_model(model, device, 51, 'autoencoder', models_path)
+# load_model(model, device, 1, 'autoencoder', models_path)
 
 
 # In[ ]:
@@ -255,7 +278,27 @@ outputs_cpu = outputs.data.cpu().numpy()
 # In[ ]:
 
 
-plot_im(outputs_cpu[10], output_path, fname='im', tag='', inline=True, mean_unnormalize=pop_mean, std_unnormalize=pop_std0, turn_off_axes=True)
+
+
+
+# In[ ]:
+
+
+dogs_index = 10
+
+
+# In[ ]:
+
+
+plot_im(images_src[dogs_index], output_path, fname='im', tag='', inline=True,
+        ann_text_std_add='Original', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
+
+
+# In[ ]:
+
+
+plot_im(outputs_cpu[dogs_index], output_path, fname='im', tag='', inline=True,
+        ann_text_std_add='Decoded', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
 
 
 # In[ ]:
@@ -281,12 +324,7 @@ dl_NOT_dogs = torch.utils.data.DataLoader(ds_NOT_dogs, batch_size=100, shuffle=F
 
 
 images, _ = iter(dl_NOT_dogs).next()
-
-
-# In[ ]:
-
-
-imshow(images[10])
+images_src = images.numpy()
 
 
 # In[ ]:
@@ -299,7 +337,27 @@ outputs_cpu = outputs.data.cpu().numpy()
 # In[ ]:
 
 
-plot_im(outputs_cpu[10], output_path, fname='im', tag='', inline=True, mean_unnormalize=pop_mean, std_unnormalize=pop_std0, turn_off_axes=True)
+
+
+
+# In[ ]:
+
+
+NOT_dogs_index = 99
+
+
+# In[ ]:
+
+
+plot_im(images_src[NOT_dogs_index], output_path, fname='im', tag='', inline=True,
+        ann_text_std_add='Original', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
+
+
+# In[ ]:
+
+
+plot_im(outputs_cpu[NOT_dogs_index], output_path, fname='im', tag='', inline=True,
+        ann_text_std_add='Decoded', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
 
 
 # In[ ]:

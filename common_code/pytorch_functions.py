@@ -9,6 +9,11 @@ from torchvision.transforms import transforms
 from torchvision.utils import save_image
 
 ########################################################
+# load package wide variables
+from .configs import *
+from .pandas_functions import *
+
+########################################################
 def test_mem():
 	cuda_mem_alloc = torch.cuda.memory_allocated() # bytes
 	print(f'CUDA memory allocated: {humanize.naturalsize(cuda_mem_alloc)}')
@@ -60,11 +65,9 @@ def save_model(model, epoch, model_name, models_path):
 
 ########################################################
 def load_model(model, device, epoch, model_name, models_path):
-	# model is the base clasee of the model you want to load
+	# model is the base class of the model you want to load, will have loaded model in the end
 	model.to(device)
 	model.load_state_dict(torch.load(os.path.join(models_path, f'{model_name}_{epoch}.model')))
-
-	return model
 
 ########################################################
 # learning rate adjustment function that divides the learning rate by 10 every lr_epoch_period=30 epochs, up to lr_n_period_cap=6 times
@@ -75,39 +78,43 @@ def decay_lr(optimizer, epoch, initial_lr=0.001, lr_epoch_period=30, lr_n_period
 		param_group['lr'] = lr
 
 ########################################################
-def get_loss(dl, model, device, loss_fn):
+def get_loss(dl, model, loss_fn, device):
 	model.eval()
-	loss = 0.0
+	total_loss = 0.0
 	for (images, _) in dl:
 		images = images.to(device)
 
 		# apply model and compute loss using images from the dataloader dl
 		outputs = model(images)
 		loss = loss_fn(outputs, images)
-		loss += loss.cpu().data.item() * images.size(0)
+		total_loss += loss.cpu().data.item() * images.size(0)
 
-	# Compute the average loss over all images
-	loss = loss / len(dl.dataset)
+	# Compute the mean loss over all images
+	mean_loss = total_loss / len(dl.dataset)
 
-	return loss
+	return mean_loss
 
 ########################################################
 def train_model(dl_train, dl_val,
-model, optimizer, loss_fn,
+model, optimizer, loss_fn, device,
 model_name, models_path,
-max_epochs, do_es=True, es_min_val_per_improvement=0.005, es_rounds=10,
+max_epochs, do_es=True, es_min_val_per_improvement=0.005, es_epochs=10,
 do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
+print_CUDA_MEM=False,
 ):
-	best_loss = None
+	float_fmt='6.9g'
+
+	best_val_loss = None
 	training_results = []
-	all_val_losses - []
+	all_val_losses = []
 	# for epoch in tqdm(range(max_epochs), desc='Epoch'):
 
 	epoch_pbar = tqdm(total=max_epochs, desc='Epoch', position=0)
 	for epoch in range(max_epochs):
 		model.train()
 		train_loss = 0.0
-		for (images, _) in tqdm(dl_train, desc='Minibatch', position=1):
+		# for (images, _) in tqdm(dl_train, desc='Minibatch', position=1): # works, but keeps repeting this pbar
+		for (images, _) in dl_train:
 			# Move images to gpu if available
 			images = images.to(device)
 
@@ -134,29 +141,36 @@ do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
 		train_loss = train_loss / len(dl_train.dataset)
 
 		# Evaluate on the val set
-		val_loss = get_loss(dl_val, model, device, loss_fn)
+		val_loss = get_loss(dl_val, model, loss_fn, device)
+
+		# Start printing epoch_message
+		epoch_message = f'Epoch {epoch:4d}, Train Loss: {train_loss:{float_fmt}}, Val Loss: {val_loss:{float_fmt}}, Delta Best {(val_loss-best_val_loss) / best_val_loss:8.3%}'
 
 		# Save the model if the val loss is less than our current best
 		saved_model = False
-		if epoch == 0 or val_loss < best_loss:
+		if epoch == 0 or val_loss < best_val_loss:
 			save_model(model, epoch, model_name, models_path)
-			best_loss = val_loss
+			best_val_loss = val_loss
 			saved_model = True
 
-		# Print the metrics
-		epoch_message = f'Epoch {epoch}, Train Loss: {train_loss}, Val Loss: {val_loss}'
+		# Finish epoch_message
+		cuda_mem_alloc = None
+		if print_CUDA_MEM and str(device) == 'cuda':
+			cuda_mem_alloc = torch.cuda.memory_allocated() # bytes
+			epoch_message = f'{epoch_message}, CUDA MEM: {humanize.naturalsize(cuda_mem_alloc)}'
+
 		if saved_model:
 			epoch_message = f'{epoch_message}, Model Saved!'
 		epoch_pbar.write(epoch_message)
 
 		# save the metrics
-		training_results.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'best_loss': best_loss, 'saved_model': saved_model})
+		training_results.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'best_val_loss': best_val_loss, 'saved_model': saved_model, 'cuda_mem_alloc': cuda_mem_alloc})
 		all_val_losses.append(val_loss)
 
 		# check for early stopping
-		if do_es and epoch > es_rounds:
-			ref_val_loss = all_val_losses[-es_rounds]
-			per_changes = [(ref_val_loss - past_val_loss / ref_val_loss) for past_val_loss in all_val_losses[-es_rounds:]]
+		if do_es and epoch > es_epochs:
+			ref_val_loss = all_val_losses[-es_epochs]
+			per_changes = [(ref_val_loss - past_val_loss) / ref_val_loss for past_val_loss in all_val_losses[-es_epochs:]]
 			execute_es = True
 			for per_change in per_changes:
 				if per_change > es_min_val_per_improvement:
@@ -164,14 +178,15 @@ do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
 					break
 			if execute_es:
 				# print message and early stop
-				epoch_pbar.write(f'\nOver the past {es_rounds} the val_loss did not improve by at least {es_min_val_per_improvement}, stopping early!')
-				epoch_pbar.write(f'val_loss: {str(all_val_losses[-es_rounds])}')
-				epoch_pbar.write(f'per_changes (as decimal): {str(per_changes)}')
+				epoch_pbar.write(f'\nOver the past {es_epochs} epochs the val loss did not improve by at least {es_min_val_per_improvement:%}, stopping early!')
+				# these messages are mostly for debugging, may eventually want to comment them out
+				epoch_pbar.write(f'ref_val_loss: {ref_val_loss:{float_fmt}}')
+				epoch_pbar.write(f"per_changes: {', '.join([f'{per:8.3%}' for per in per_changes])}")
 				break
 
 		# end of epoch loop, update pbar
 		epoch_pbar.update(1)
 
 	# training complete, wrap it up
-	dfp_train_results = create_dfp(training_results, target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_loss', 'saved_model'], sort_by=['epoch'], sort_by_ascending=True)
+	dfp_train_results = create_dfp(training_results, target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'saved_model', 'cuda_mem_alloc'], sort_by=['epoch'], sort_by_ascending=True)
 	return dfp_train_results

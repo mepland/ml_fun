@@ -10,8 +10,12 @@ import numpy as np
 import pandas as pd
 
 from natsort import natsorted
-from tqdm import tqdm
 import humanize
+
+try:
+	from tqdm.notebook import tqdm
+except ImportError:
+	from tqdm import tqdm
 
 ########################################################
 # setup my own large number formatter for convenience and tweakability
