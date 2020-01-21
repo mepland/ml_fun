@@ -217,7 +217,6 @@ loss_fn = nn.MSELoss()
 # In[ ]:
 
 
-# from common_code import *
 dfp_train_results = train_model(dl_dogs_train, dl_dogs_val,
 model, optimizer, loss_fn, device,
 model_name='autoencoder', models_path=models_path,
@@ -250,6 +249,12 @@ from common_code import *
 # In[ ]:
 
 
+# test_mem()
+
+
+# In[ ]:
+
+
 
 
 
@@ -264,7 +269,7 @@ images_src = images.numpy()
 
 
 model = Autoencoder()
-load_model(model, device, 51, 'autoencoder', models_path)
+load_model(model, device, 42, 'autoencoder', models_path)
 # load_model(model, device, 1, 'autoencoder', models_path)
 
 
