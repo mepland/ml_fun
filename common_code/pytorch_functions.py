@@ -102,7 +102,7 @@ max_epochs, do_es=True, es_min_val_per_improvement=0.005, es_epochs=10,
 do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
 print_CUDA_MEM=False,
 ):
-	float_fmt='6.9g'
+	float_fmt='.9f'
 
 	best_val_loss = None
 	training_results = []
@@ -144,10 +144,10 @@ print_CUDA_MEM=False,
 		val_loss = get_loss(dl_val, model, loss_fn, device)
 
 		# Start printing epoch_message
-		delta_best = 0
+		delta_per_best = 0
 		if epoch != 0:
-			delta_best = (val_loss-best_val_loss) / best_val_loss
-		epoch_message = f'Epoch {epoch:4d}, Train Loss: {train_loss:{float_fmt}}, Val Loss: {val_loss:{float_fmt}}, Delta Best {delta_best:8.3%}'
+			delta_per_best = (val_loss-best_val_loss) / best_val_loss
+		epoch_message = f'Epoch {epoch:4d}, Train Loss: {train_loss:{float_fmt}}, Val Loss: {val_loss:{float_fmt}}, Delta Best {delta_per_best:8.3%}'
 
 		# Save the model if the val loss is less than our current best
 		saved_model = False
@@ -158,16 +158,17 @@ print_CUDA_MEM=False,
 
 		# Finish epoch_message
 		cuda_mem_alloc = None
-		if print_CUDA_MEM and str(device) == 'cuda':
+		if str(device) == 'cuda':
 			cuda_mem_alloc = torch.cuda.memory_allocated() # bytes
-			epoch_message = f'{epoch_message}, CUDA MEM: {humanize.naturalsize(cuda_mem_alloc)}'
+			if print_CUDA_MEM:
+				epoch_message = f'{epoch_message}, CUDA MEM: {humanize.naturalsize(cuda_mem_alloc)}'
 
 		if saved_model:
 			epoch_message = f'{epoch_message}, Model Saved!'
 		epoch_pbar.write(epoch_message)
 
 		# save the metrics
-		training_results.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'best_val_loss': best_val_loss, 'delta_best': delta_best, 'saved_model': saved_model, 'cuda_mem_alloc': cuda_mem_alloc})
+		training_results.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'best_val_loss': best_val_loss, 'delta_per_best': delta_per_best, 'saved_model': saved_model, 'cuda_mem_alloc': cuda_mem_alloc})
 		all_val_losses.append(val_loss)
 
 		# check for early stopping
@@ -182,14 +183,14 @@ print_CUDA_MEM=False,
 			if execute_es:
 				# print message and early stop
 				epoch_pbar.write(f'\nOver the past {es_epochs} epochs the val loss did not improve by at least {es_min_val_per_improvement:%}, stopping early!')
-				# these messages are mostly for debugging, may eventually want to comment them out
-				epoch_pbar.write(f'ref_val_loss: {ref_val_loss:{float_fmt}}')
-				epoch_pbar.write(f"per_changes: {', '.join([f'{per:8.3%}' for per in per_changes])}")
+				# these messages are for debugging
+				# epoch_pbar.write(f'ref_val_loss: {ref_val_loss:{float_fmt}}')
+				# epoch_pbar.write(f"per_changes: {', '.join([f'{per:8.3%}' for per in per_changes])}")
 				break
 
 		# end of epoch loop, update pbar
 		epoch_pbar.update(1)
 
 	# training complete, wrap it up
-	dfp_train_results = create_dfp(training_results, target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_best', 'saved_model', 'cuda_mem_alloc'], sort_by=['epoch'], sort_by_ascending=True)
+	dfp_train_results = create_dfp(training_results, target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_per_best', 'saved_model', 'cuda_mem_alloc'], sort_by=['epoch'], sort_by_ascending=[True])
 	return dfp_train_results

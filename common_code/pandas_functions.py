@@ -3,22 +3,23 @@
 from .configs import *
 
 ########################################################
-def massage_dfp(dfp, target_fixed_cols, sort_by, sort_by_ascending):
+def massage_dfp(dfp, target_fixed_cols=None, sort_by=None, sort_by_ascending=None):
 	# sort rows
 	if sort_by is not None:
+		if isinstance(sort_by, str):
+			sort_by = [sort_by]
+		elif not isinstance(sort_by, list):
+				raise TypeError(f'sort_by = {str(sort_by)} should be a str or list!')
+
 		if sort_by_ascending is None:
 			sort_by_ascending = True
 
-		if len(sort_by) != 1 and isinstance(sort_by_ascending, bool):
-			sort_by_ascending_arg = []
-			for i in range(len(sort_by)):
-				sort_by_ascending_arg.append(sort_by_ascending)
+		if isinstance(sort_by_ascending, bool):
+			sort_by_ascending_arg = [sort_by_ascending for i in range(len(sort_by))]
+		elif isinstance(sort_by_ascending, list):
+			sort_by_ascending_arg = list(sort_by_ascending)
 		else:
-			if not isinstance(sort_by_ascending, list):
-				print(sort_by_ascending)
-				raise TypeError('sort_by_ascending better be a list for this to work!')
-
-			sort_by_ascending_arg = sort_by_ascending
+			raise TypeError(f'Unknown sort_by_ascending = {str(sort_by_ascending)}, should be a bool or list!')
 
 		dfp = dfp.sort_values(by=sort_by, ascending=sort_by_ascending_arg).reset_index(drop=True)
 
