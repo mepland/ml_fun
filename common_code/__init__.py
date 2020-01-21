@@ -3,6 +3,6 @@
 ########################################################
 # load the modules
 from .configs import *
-from .pytorch_functions import *
+from .torch_functions import *
 from .pandas_functions import *
 from .plotting import *
