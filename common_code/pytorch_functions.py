@@ -144,7 +144,10 @@ print_CUDA_MEM=False,
 		val_loss = get_loss(dl_val, model, loss_fn, device)
 
 		# Start printing epoch_message
-		epoch_message = f'Epoch {epoch:4d}, Train Loss: {train_loss:{float_fmt}}, Val Loss: {val_loss:{float_fmt}}, Delta Best {(val_loss-best_val_loss) / best_val_loss:8.3%}'
+		delta_best = 0
+		if epoch != 0:
+			delta_best = (val_loss-best_val_loss) / best_val_loss
+		epoch_message = f'Epoch {epoch:4d}, Train Loss: {train_loss:{float_fmt}}, Val Loss: {val_loss:{float_fmt}}, Delta Best {delta_best:8.3%}'
 
 		# Save the model if the val loss is less than our current best
 		saved_model = False
@@ -164,7 +167,7 @@ print_CUDA_MEM=False,
 		epoch_pbar.write(epoch_message)
 
 		# save the metrics
-		training_results.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'best_val_loss': best_val_loss, 'saved_model': saved_model, 'cuda_mem_alloc': cuda_mem_alloc})
+		training_results.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss, 'best_val_loss': best_val_loss, 'delta_best': delta_best, 'saved_model': saved_model, 'cuda_mem_alloc': cuda_mem_alloc})
 		all_val_losses.append(val_loss)
 
 		# check for early stopping
@@ -188,5 +191,5 @@ print_CUDA_MEM=False,
 		epoch_pbar.update(1)
 
 	# training complete, wrap it up
-	dfp_train_results = create_dfp(training_results, target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'saved_model', 'cuda_mem_alloc'], sort_by=['epoch'], sort_by_ascending=True)
+	dfp_train_results = create_dfp(training_results, target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_best', 'saved_model', 'cuda_mem_alloc'], sort_by=['epoch'], sort_by_ascending=True)
 	return dfp_train_results
