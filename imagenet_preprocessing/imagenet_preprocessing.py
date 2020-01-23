@@ -11,14 +11,14 @@ from PIL import Image
 # import piexif
 
 ########################################################
-# setup resapling algos as dict TODO test all
+# setup resapling algos as dict
 resampling_algos = {
 'bicubic': Image.BICUBIC,
 'bilinear': Image.BILINEAR,
 'box': Image.BOX,
 'hamming': Image.HAMMING,
 'lanczos': Image.LANCZOS,
-'nearest': Image.NEAREST,
+# 'nearest': Image.NEAREST, # really pixelated output
 }
 
 ########################################################
@@ -30,23 +30,46 @@ def process_im(target_res, allow_upscale, resampling_algo, in_path, out_path, fn
 
 		im = Image.open(f_path)
 
-		if not allow_upscale:
-			width, height = im.size
-			min_side = min(width, height)
-			if min_side < target_res:
-				return
+		width, height = im.size
+		min_side = min(width, height)
 
-		im = im.resize((target_res, target_res), resampling_algos[resampling_algo])
-
-		# quick check that the image is not empty
-		if im.getbbox() is None:
-			print(f"Can not save {(out_path, f'{fname_base}.jpg')} as it has no bounding box / is completely empty!")
+		if not allow_upscale and min_side < target_res:
 			return None
 
-		# drop alpha channel to be safe
+		# quick check that the image is not empty
+		if im.getbbox() is None or width is None or height is None or width==0 or height==0:
+			print(f'Can not process {f_path} as it has no bounding box or is completely empty!')
+			return None
+
+		# drop alpha channel to be safe (some imagenet files may be pngs misidentified as jpgs
 		im = im.convert('RGB')
 
-		# drop extension to be safe
+		# resize image, maintaining the aspect ratio, such that the smallest size has target_res
+		if width == min_side:
+			# this case also includes square images with width = height = min_side
+			resize_width  = target_res
+			resize_height = int(round(target_res*(height/width)))
+		else:
+			resize_width  = int(round(target_res*(width/height)))
+			resize_height = target_res
+
+		im = im.resize((resize_width, resize_height), resampling_algos[resampling_algo])
+
+		# crop to the center if needed, maintains the aspect ratio
+		if resize_width != resize_height:
+			left   = (resize_width  - target_res)/2
+			top    = (resize_height - target_res)/2
+			right  = (resize_width  + target_res)/2
+			bottom = (resize_height + target_res)/2
+
+			im = im.crop((left, top, right, bottom))
+
+		# safety check that the image is totally (target_res, target_res) square, and that no rounding errors are tripping us up
+		width, height = im.size
+		if width != target_res or height != target_res:
+			im = im.resize((target_res, target_res), resampling_algos[resampling_algo])
+
+		# drop extension to be safe, and save
 		fname_base, _ = os.path.splitext(fname)
 		im.save(os.path.join(out_path, f'{fname_base}.jpg'), 'JPEG')
 
