@@ -228,7 +228,21 @@ do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
 # In[ ]:
 
 
-dfp_train_results
+# dfp_train_results
+
+
+# In[ ]:
+
+
+write_dfp(dfp_train_results, output_path , 'train_results', tag='',
+          target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_per_best', 'saved_model', 'cuda_mem_alloc'],
+          sort_by=['epoch'], sort_by_ascending=True)
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
