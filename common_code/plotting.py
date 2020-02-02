@@ -172,7 +172,7 @@ def ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=s
 		if plot_png:
 			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
 		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
-		fig.close('all')
+		plt.close('all')
 
 ########################################################
 def unnormalize_im(im, std_unnormalize, mean_unnormalize):
