@@ -117,6 +117,77 @@ def ann_text_std(dt_start, dt_stop, ann_text_std_add, ann_text_hard_coded=None, 
 	return ann_str.strip('\n')
 
 ########################################################
+def _setup_vars(ann_texts_in, x_axis_params, y_axis_params):
+	ann_texts = []
+	if ann_texts_in is not None:
+		ann_texts = list(ann_texts_in)
+	if not isinstance(x_axis_params, dict):
+		x_axis_params = dict()
+	if not isinstance(y_axis_params, dict):
+		y_axis_params = dict()
+	return ann_texts, x_axis_params, y_axis_params
+
+########################################################
+def determine_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=False):
+	x_min_auto, x_max_auto = ax.get_xlim()
+	x_min = x_axis_params.get('min', None)
+	x_max = x_axis_params.get('max', None)
+	if x_min is None:
+		x_min = x_min_auto
+	if x_max is None:
+		x_max = x_max_auto
+
+	y_min_auto, y_max_auto = ax.get_ylim()
+	y_min = y_axis_params.get('min', None)
+	y_max = y_axis_params.get('max', None)
+	y_maxMult = None
+	if allow_maxMult:
+		y_maxMult = y_axis_params.get('maxMult', None)
+	if y_min is None:
+		y_min = y_min_auto
+
+	if y_maxMult is not None:
+		y_max = y_min + y_maxMult*(y_max_auto-y_min)
+	elif y_max is None:
+		y_max = y_max_auto
+
+	return x_min, x_max, y_min, y_max
+
+########################################################
+def ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x, ann_text_origin_y=std_ann_y, forced_text_size=None):
+	if ann_texts is not None:
+		for text in ann_texts:
+			if forced_text_size is not None:
+				text_size = forced_text_size
+			else:
+				text_size = text.get('size', 18)
+
+			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=text_size, backgroundcolor='white')
+
+	fig.tight_layout()
+	if inline:
+		fig.show()
+	else:
+		os.makedirs(m_path, exist_ok=True)
+		if plot_png:
+			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
+		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
+		fig.close('all')
+
+########################################################
+def unnormalize_im(im, std_unnormalize, mean_unnormalize):
+	if std_unnormalize is not None and mean_unnormalize is not None:
+		im_unnorm = np.zeros(im.shape)
+		for channel in range(im.shape[0]):
+			im_unnorm[channel] = std_unnormalize[channel]*im[channel] + mean_unnormalize[channel]
+		# now clip to [0,1] to deal with any rounding errors and prevent later warning from imshow
+		im_unnorm = np.clip(im_unnorm, 0., 1.)
+
+		return im_unnorm
+	else:
+		return im
+
+########################################################
 def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, binning={'nbins': 10}, x_axis_params=None, y_axis_params=None): # , label_values=False
 # Standard
 # hist_dict = {'values': , 'weights': None, 'label': None, 'histtype': 'step', 'stacked': False, 'density': False, 'c': None, 'lw': 2}
@@ -127,13 +198,7 @@ def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=
 
 # x_axis_params={'axis_label':None, 'min':None, 'max':None, 'units': '', 'log': False}, y_axis_params={'axis_label':None, 'min':None, 'max':None, 'maxMult':None, 'log': False, 'show_bin_size': True}
 
-	ann_texts = []
-	if ann_texts_in is not None:
-		ann_texts = list(ann_texts_in)
-	if x_axis_params is None:
-		x_axis_params = {}
-	if y_axis_params is None:
-		y_axis_params = {}
+	ann_texts, x_axis_params, y_axis_params = _setup_vars(ann_texts_in, x_axis_params, y_axis_params)
 
 	bin_edges = binning.get('bin_edges', [])
 	nbins = binning.get('nbins', None)
@@ -272,26 +337,7 @@ def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=
 	ax.xaxis.set_tick_params(labelsize=15)
 	ax.yaxis.set_tick_params(labelsize=15)
 
-	x_min_auto, x_max_auto = ax.get_xlim()
-	x_min = x_axis_params.get('min', None)
-	x_max = x_axis_params.get('max', None)
-	if x_min is None:
-		x_min = x_min_auto
-	if x_max is None:
-		x_max = x_max_auto
-
-	y_min_auto, y_max_auto = ax.get_ylim()
-	y_min = y_axis_params.get('min', None)
-	y_max = y_axis_params.get('max', None)
-	y_maxMult = y_axis_params.get('maxMult', None)
-	if y_min is None:
-		y_min = y_min_auto
-
-	if y_maxMult is not None:
-		y_max = y_min + y_maxMult*(y_max_auto-y_min)
-	elif y_max is None:
-		y_max = y_max_auto
-
+	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=True)
 	ax.set_xlim(x_min, x_max)
 	ax.set_ylim(y_min, y_max)
 
@@ -307,22 +353,7 @@ def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=
 		leg.get_frame().set_facecolor('none')
 
 	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
-
-	if ann_texts is not None:
-		ann_text_origin_x = std_ann_x
-		ann_text_origin_y = std_ann_y
-		for text in ann_texts:
-			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=text.get('size', 18))
-
-	plt.tight_layout()
-	if inline:
-		fig.show()
-	else:
-		os.makedirs(m_path, exist_ok=True)
-		if plot_png:
-			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
-		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
-		plt.close('all')
+	ann_and_save(fig, ann_texts, inline, m_path, fname, tag)
 
 ########################################################
 def plot_2d_hist(x_vals, y_vals, m_path, fname='2dhist', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, binning={'x': {'nbins': None, 'min': None, 'max': None}, 'y': {'nbins': None, 'min': None, 'max': None}}, x_axis_params=None, y_axis_params=None, z_axis_params=None, show_bin_size=True, bin_size_str_fmt=None): # , weights=None
@@ -330,15 +361,9 @@ def plot_2d_hist(x_vals, y_vals, m_path, fname='2dhist', tag='', dt_start=None, 
 # y_axis_params={'axis_label': None, 'min': None, 'max': None, 'units': '', 'log': False}
 # z_axis_params={'axis_label': None, 'min': None, 'max': None, 'norm': None}
 
-	ann_texts = []
-	if ann_texts_in is not None:
-		ann_texts = list(ann_texts_in)
-	if x_axis_params is None:
-		x_axis_params = {}
-	if y_axis_params is None:
-		y_axis_params = {}
-	if z_axis_params is None:
-		z_axis_params = {}
+	ann_texts, x_axis_params, y_axis_params = _setup_vars(ann_texts_in, x_axis_params, y_axis_params)
+	if not isinstance(z_axis_params, dict):
+		z_axis_params = dict()
 
 	norm = z_axis_params.get('norm', None)
 	if norm == 'log':
@@ -385,22 +410,7 @@ range=[[binning.get('x', {}).get('min', None), binning.get('x', {}).get('max', N
 	ax.xaxis.set_tick_params(labelsize=15)
 	ax.yaxis.set_tick_params(labelsize=15)
 
-	x_min_auto, x_max_auto = ax.get_xlim()
-	x_min = x_axis_params.get('min', None)
-	x_max = x_axis_params.get('max', None)
-	if x_min is None:
-		x_min = x_min_auto
-	if x_max is None:
-		x_max = x_max_auto
-
-	y_min_auto, y_max_auto = ax.get_ylim()
-	y_min = y_axis_params.get('min', None)
-	y_max = y_axis_params.get('max', None)
-	if y_min is None:
-		y_min = y_min_auto
-	if y_max is None:
-		y_max = y_max_auto
-
+	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params)
 	ax.set_xlim(x_min, x_max)
 	ax.set_ylim(y_min, y_max)
 
@@ -411,22 +421,7 @@ range=[[binning.get('x', {}).get('min', None), binning.get('x', {}).get('max', N
 		ax.set_yscale('log')
 
 	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
-
-	if ann_texts is not None:
-		ann_text_origin_x = std_ann_x - 0.12
-		ann_text_origin_y = std_ann_y
-		for text in ann_texts:
-			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=text.get('size', 18))
-
-	plt.tight_layout()
-	if inline:
-		fig.show()
-	else:
-		os.makedirs(m_path, exist_ok=True)
-		if plot_png:
-			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
-		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
-		plt.close('all')
+	ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x-0.12)
 
 ########################################################
 def plot_corr_matrix(dfp_corr, m_path, fname='correlation', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, label_values=True, rotate_x_tick_labels=True):
@@ -487,30 +482,13 @@ def plot_corr_matrix(dfp_corr, m_path, fname='correlation', tag='', dt_start=Non
 	ax_left.minorticks_off()
 
 	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
-
-	if ann_texts is not None:
-		ann_text_origin_x = std_ann_x - 0.08
-		ann_text_origin_y = 0.96
-		for text in ann_texts:
-			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=12) # text.get('size', 18))
-
-	plt.tight_layout()
-	if inline:
-		fig.show()
-	else:
-		os.makedirs(m_path, exist_ok=True)
-		if plot_png:
-			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
-		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
-		plt.close('all')
+	ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x-0.08, ann_text_origin_y=0.96, forced_text_size=12)
 
 ########################################################
 # plot overlaid roc curves for many models
 def plot_rocs(models, m_path, fname='roc', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, rndGuess=False, better_ann=True, grid=False, inverse_log=False, precision_recall=False, pop_PPV=None, x_axis_params=None, y_axis_params=None):
 
-	ann_texts = []
-	if ann_texts_in is not None:
-		ann_texts = list(ann_texts_in)
+	ann_texts, x_axis_params, y_axis_params = _setup_vars(ann_texts_in, x_axis_params, y_axis_params)
 
 	fig, ax = plt.subplots()
 
@@ -584,21 +562,11 @@ def plot_rocs(models, m_path, fname='roc', tag='', dt_start=None, dt_stop=None, 
 		ax.set_yscale('log')
 		ax.set_ylabel(f'Inverse {ylabel}')
 	else:
-		ax.set_xlim([0.,1.])
+		ax.set_ylim([0.,1.])
 		ax.set_ylabel(ylabel)
 
-	if not isinstance(x_axis_params, dict):
-		x_axis_params = dict()
-	x_min_current, x_max_current = ax.get_xlim()
-	x_min = x_axis_params.get('min', x_min_current)
-	x_max = x_axis_params.get('max', x_max_current)
+	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params)
 	ax.set_xlim([x_min, x_max])
-
-	if not isinstance(y_axis_params, dict):
-		y_axis_params = dict()
-	y_min_current, y_max_current = ax.get_ylim()
-	y_min = y_axis_params.get('min', y_min_current)
-	y_max = y_axis_params.get('max', y_max_current)
 	ax.set_ylim([y_min, y_max])
 
 	if better_ann:
@@ -614,22 +582,7 @@ def plot_rocs(models, m_path, fname='roc', tag='', dt_start=None, dt_stop=None, 
 				plt.text(1.07, 1.08, 'Better', size=12, rotation=-45, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='green', alpha=0.2))
 
 	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
-
-	if ann_texts is not None:
-		ann_text_origin_x = std_ann_x - 0.08
-		ann_text_origin_y = 0.96
-		for text in ann_texts:
-			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=12) # text.get('size', 18))
-
-	plt.tight_layout()
-	if inline:
-		fig.show()
-	else:
-		os.makedirs(m_path, exist_ok=True)
-		if plot_png:
-			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
-		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
-		plt.close('all')
+	ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x-0.08, ann_text_origin_y=0.96, forced_text_size=12)
 
 ########################################################
 def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, mean_unnormalize=None, std_unnormalize=None, im_vsize=4, turn_off_axes=True, x_axis_params=None, y_axis_params=None):
@@ -637,13 +590,7 @@ def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=
 	if not isinstance(im, np.ndarray):
 		raise ValueError('Can not plot {type(im)}, convert to numpy array prior to plotting!')
 
-	ann_texts = []
-	if ann_texts_in is not None:
-		ann_texts = list(ann_texts_in)
-	if x_axis_params is None:
-		x_axis_params = {}
-	if y_axis_params is None:
-		y_axis_params = {}
+	ann_texts, x_axis_params, y_axis_params = _setup_vars(ann_texts_in, x_axis_params, y_axis_params)
 
 	fig, ax = plt.subplots(num=fname)
 	if im_vsize is not None:
@@ -652,15 +599,7 @@ def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=
 		fig.set_size_inches(aspect_ratio_single*vsize, vsize)
 
 	# unnormalize
-	if std_unnormalize is not None and mean_unnormalize is not None:
-		im_unnorm = np.zeros(im.shape)
-		for channel in range(im.shape[0]):
-			im_unnorm[channel] = std_unnormalize[channel]*im[channel] + mean_unnormalize[channel]
-		# now clip to [0,1] to deal with any rounding errors and prevent later warning from imshow
-		im_unnorm = np.clip(im_unnorm, 0., 1.)
-
-		im = im_unnorm
-		del im_unnorm; im_unnorm=None;
+	im = unnormalize_im(im, std_unnormalize, mean_unnormalize)
 
 	# transpose from (channels, im_res, im_res) to (im_res, im_res, channels) for imshow plotting
 	im = np.transpose(im, (1, 2, 0))
@@ -679,39 +618,9 @@ def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=
 		ax.xaxis.set_tick_params(labelsize=15)
 		ax.yaxis.set_tick_params(labelsize=15)
 
-	x_min_auto, x_max_auto = ax.get_xlim()
-	x_min = x_axis_params.get('min', None)
-	x_max = x_axis_params.get('max', None)
-	if x_min is None:
-		x_min = x_min_auto
-	if x_max is None:
-		x_max = x_max_auto
-
-	y_min_auto, y_max_auto = ax.get_ylim()
-	y_min = y_axis_params.get('min', None)
-	y_max = y_axis_params.get('max', None)
-	if y_min is None:
-		y_min = y_min_auto
-	if y_max is None:
-		y_max = y_max_auto
-
+	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params)
 	ax.set_xlim(x_min, x_max)
 	ax.set_ylim(y_min, y_max)
 
 	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
-
-	if ann_texts is not None:
-		ann_text_origin_x = std_ann_x
-		ann_text_origin_y = std_ann_y
-		for text in ann_texts:
-			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=text.get('size', 18), backgroundcolor='white')
-
-	plt.tight_layout()
-	if inline:
-		fig.show()
-	else:
-		os.makedirs(m_path, exist_ok=True)
-		if plot_png:
-			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
-		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
-		plt.close('all')
+	ann_and_save(fig, ann_texts, inline, m_path, fname, tag)
