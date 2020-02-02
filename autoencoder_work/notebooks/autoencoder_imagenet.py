@@ -275,6 +275,35 @@ from common_code import *
 # In[ ]:
 
 
+dfp_train_results = load_dfp(output_path, 'train_results', tag='', cols_bool=['saved_model'],
+                             cols_float=['train_loss','val_loss','best_val_loss','delta_per_best'])
+
+
+# In[ ]:
+
+
+dfp_train_results
+
+
+# In[ ]:
+
+
+plot_loss_vs_epoch(dfp_train_results, output_path, fname='loss_vs_epoch', tag='', inline=True,
+                   ann_text_std_add=None,
+                   # x_axis_params=None, y_axis_params=None,
+                   loss_cols=['train_loss', 'val_loss'],
+                  )
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
 im_test = np.random.random([3, im_res, im_res])
 
 
