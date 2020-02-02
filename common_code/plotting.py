@@ -128,8 +128,8 @@ def _setup_vars(ann_texts_in, x_axis_params, y_axis_params):
 	return ann_texts, x_axis_params, y_axis_params
 
 ########################################################
-def determine_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=False):
-	x_min_auto, x_max_auto = ax.get_xlim()
+def set_ax_limits(_ax, x_axis_params, y_axis_params, allow_maxMult=False):
+	x_min_auto, x_max_auto = _ax.get_xlim()
 	x_min = x_axis_params.get('min', None)
 	x_max = x_axis_params.get('max', None)
 	if x_min is None:
@@ -137,7 +137,7 @@ def determine_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=False):
 	if x_max is None:
 		x_max = x_max_auto
 
-	y_min_auto, y_max_auto = ax.get_ylim()
+	y_min_auto, y_max_auto = _ax.get_ylim()
 	y_min = y_axis_params.get('min', None)
 	y_max = y_axis_params.get('max', None)
 	y_maxMult = None
@@ -151,10 +151,23 @@ def determine_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=False):
 	elif y_max is None:
 		y_max = y_max_auto
 
-	return x_min, x_max, y_min, y_max
+	_ax.set_xlim(x_min, x_max)
+	_ax.set_ylim(y_min, y_max)
 
 ########################################################
-def ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x, ann_text_origin_y=std_ann_y, forced_text_size=None):
+def clean_ax(_ax, x_axis_params, y_axis_params, turn_off_axes=False):
+	if turn_off_axes:
+		_ax.axis('off')
+	else:
+		_ax.set_xlabel(x_axis_params.get('axis_label', ''))
+		_ax.set_ylabel(y_axis_params.get('axis_label', ''))
+		_ax.xaxis.label.set_size(20)
+		_ax.yaxis.label.set_size(20)
+		_ax.xaxis.set_tick_params(labelsize=15)
+		_ax.yaxis.set_tick_params(labelsize=15)
+
+########################################################
+def ann_and_save(_fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x, ann_text_origin_y=std_ann_y, forced_text_size=None):
 	if ann_texts is not None:
 		for text in ann_texts:
 			if forced_text_size is not None:
@@ -164,14 +177,14 @@ def ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=s
 
 			plt.figtext(ann_text_origin_x+text.get('x', 0.0), ann_text_origin_y+text.get('y', 0.0), text.get('label', 'MISSING'), ha=text.get('ha', 'left'), va='top', size=text_size, backgroundcolor='white')
 
-	fig.tight_layout()
+	_fig.tight_layout()
 	if inline:
-		fig.show()
+		_fig.show()
 	else:
 		os.makedirs(m_path, exist_ok=True)
 		if plot_png:
-			fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
-		fig.savefig(f'{m_path}/{fname}{tag}.pdf')
+			_fig.savefig(f'{m_path}/{fname}{tag}.png', dpi=png_dpi)
+		_fig.savefig(f'{m_path}/{fname}{tag}.pdf')
 		plt.close('all')
 
 ########################################################
@@ -329,17 +342,10 @@ def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=
 	if x_units is not None and x_units != '':
 		y_label = f'{y_label} [{x_units}]'
 
-	ax.set_xlabel(x_axis_params.get('axis_label', 'Bins'))
-	ax.set_ylabel(y_label)
+	y_axis_params['axis_label'] = y_label
 
-	ax.xaxis.label.set_size(20)
-	ax.yaxis.label.set_size(20)
-	ax.xaxis.set_tick_params(labelsize=15)
-	ax.yaxis.set_tick_params(labelsize=15)
-
-	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=True)
-	ax.set_xlim(x_min, x_max)
-	ax.set_ylim(y_min, y_max)
+	clean_ax(ax, x_axis_params, y_axis_params)
+	set_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=True)
 
 	if x_axis_params.get('log', False):
 		ax.set_xscale('log')
@@ -400,19 +406,13 @@ range=[[binning.get('x', {}).get('min', None), binning.get('x', {}).get('max', N
 		if y_units is not None and y_units != '':
 			bin_size_ann = f'{bin_size_ann} {y_units}'
 
-	ax.set_xlabel(x_label)
-	ax.set_ylabel(y_label)
+	x_axis_params['axis_label'] = x_label
+	y_axis_params['axis_label'] = y_label
 
 	fig.colorbar(image, ax=ax, label=f'{z_label}{bin_size_ann}');
 
-	ax.xaxis.label.set_size(20)
-	ax.yaxis.label.set_size(20)
-	ax.xaxis.set_tick_params(labelsize=15)
-	ax.yaxis.set_tick_params(labelsize=15)
-
-	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params)
-	ax.set_xlim(x_min, x_max)
-	ax.set_ylim(y_min, y_max)
+	clean_ax(ax, x_axis_params, y_axis_params)
+	set_ax_limits(ax, x_axis_params, y_axis_params)
 
 	if x_axis_params.get('log', False):
 		ax.set_xscale('log')
@@ -565,9 +565,7 @@ def plot_rocs(models, m_path, fname='roc', tag='', dt_start=None, dt_stop=None, 
 		ax.set_ylim([0.,1.])
 		ax.set_ylabel(ylabel)
 
-	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params)
-	ax.set_xlim([x_min, x_max])
-	ax.set_ylim([y_min, y_max])
+	set_ax_limits(ax, x_axis_params, y_axis_params)
 
 	if better_ann:
 		if not precision_recall:
@@ -598,29 +596,70 @@ def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=
 	else:
 		fig.set_size_inches(aspect_ratio_single*vsize, vsize)
 
-	# unnormalize
+	# unnormalize and transpose from (channels, im_res, im_res) to (im_res, im_res, channels) for imshow plotting
 	im = unnormalize_im(im, std_unnormalize, mean_unnormalize)
-
-	# transpose from (channels, im_res, im_res) to (im_res, im_res, channels) for imshow plotting
 	im = np.transpose(im, (1, 2, 0))
 
 	# plot imagee
 	ax.imshow(im, aspect='equal')
 
-	# clean up
-	if turn_off_axes:
-		ax.axis('off')
-	else:
-		ax.set_xlabel(x_axis_params.get('axis_label', ''))
-		ax.set_ylabel(y_axis_params.get('axis_label', ''))
-		ax.xaxis.label.set_size(20)
-		ax.yaxis.label.set_size(20)
-		ax.xaxis.set_tick_params(labelsize=15)
-		ax.yaxis.set_tick_params(labelsize=15)
-
-	x_min, x_max, y_min, y_max = determine_ax_limits(ax, x_axis_params, y_axis_params)
-	ax.set_xlim(x_min, x_max)
-	ax.set_ylim(y_min, y_max)
+	clean_ax(ax, x_axis_params, y_axis_params, turn_off_axes)
+	set_ax_limits(ax, x_axis_params, y_axis_params)
 
 	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
 	ann_and_save(fig, ann_texts, inline, m_path, fname, tag)
+
+########################################################
+def plot_im_comp(im_left, im_right, m_path, fname='im_comp', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, mean_unnormalize=None, std_unnormalize=None, im_vsize=4, turn_off_axes=True, x_axis_params=None, y_axis_params=None, ann_margin=True, left_right_orig_pred=True):
+	# x_axis_params={'axis_label':None, 'min':None, 'max':None}, y_axis_params={'axis_label':None, 'min':None, 'max':None}
+	if not isinstance(im_left, np.ndarray) or not isinstance(im_right, np.ndarray):
+		raise ValueError('Can not plot {type(im)}, convert to numpy array prior to plotting!')
+
+	ann_texts, x_axis_params, y_axis_params = _setup_vars(ann_texts_in, x_axis_params, y_axis_params)
+
+	fig = plt.figure(fname)
+	if im_vsize is not None:
+		fig.set_size_inches(2*im_vsize, im_vsize)
+	else:
+		fig.set_size_inches(2*aspect_ratio_single*vsize, vsize)
+
+	if ann_margin:
+		gs = gridspec.GridSpec(1,3, width_ratios=[2, 2, 1])
+		ax_ann_margin = plt.subplot(gs[2])
+		ax_ann_margin.axis('off')
+		ann_text_origin_x=std_ann_x+0.08
+		ann_text_origin_y=std_ann_y-0.09
+		forced_text_size = 12
+	else:
+		gs = gridspec.GridSpec(1,2, width_ratios=[1, 1])
+		ann_text_origin_x=std_ann_x
+		ann_text_origin_y=std_ann_y
+		forced_text_size=None
+	ax_left = plt.subplot(gs[0])
+	ax_right = plt.subplot(gs[1])
+
+	# unnormalize and transpose from (channels, im_res, im_res) to (im_res, im_res, channels) for imshow plotting
+	im_left = unnormalize_im(im_left, std_unnormalize, mean_unnormalize)
+	im_left = np.transpose(im_left, (1, 2, 0))
+	im_right = unnormalize_im(im_right, std_unnormalize, mean_unnormalize)
+	im_right = np.transpose(im_right, (1, 2, 0))
+
+	# plot imagee
+	ax_left.imshow(im_left, aspect='equal')
+	ax_right.imshow(im_right, aspect='equal')
+
+	for _ax in [ax_left, ax_right]:
+		clean_ax(_ax, x_axis_params, y_axis_params, turn_off_axes)
+		set_ax_limits(_ax, x_axis_params, y_axis_params)
+
+	if left_right_orig_pred:
+		if ann_margin:
+			# TODO dial in x pos
+			plt.figtext(0.2, 0.1, 'Original', ha='center', va='top', size=14, backgroundcolor='white')
+			plt.figtext(0.59, 0.1, 'Predicted', ha='center', va='top', size=14, backgroundcolor='white')
+		else:
+			plt.figtext(0.25, 0.95, 'Original', ha='center', va='top', size=14, backgroundcolor='white')
+			plt.figtext(0.75, 0.95, 'Predicted', ha='center', va='top', size=14, backgroundcolor='white')
+
+	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
+	ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x, ann_text_origin_y, forced_text_size)
