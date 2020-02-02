@@ -68,7 +68,7 @@ def write_dfp(dfp_or_row_dicts, m_path, fname, tag='', target_fixed_cols=None, s
 
 ########################################################
 # load dfp from csv, clean up cols
-def load_dfp(m_path, fname, tag='', debug=False, cols_str=[], cols_float=[], cols_dt=[]):
+def load_dfp(m_path, fname, tag='', debug=False, cols_str=[], cols_float=[], cols_dt=[], cols_bool=[]):
 	full_fname = f'{m_path}/{fname}{tag}.csv'
 
 	try:
@@ -92,6 +92,8 @@ def load_dfp(m_path, fname, tag='', debug=False, cols_str=[], cols_float=[], col
 				dfp[col] = dfp[col].astype(float)
 			elif col in cols_dt:
 				dfp[col] = pd.to_datetime(dfp[col])
+			elif col in cols_bool:
+				dfp[col] = dfp[col].astype(bool)
 			else:
 				dfp[col] = dfp[col].astype(int)
 
