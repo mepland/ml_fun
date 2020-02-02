@@ -275,6 +275,37 @@ from common_code import *
 # In[ ]:
 
 
+im_test = np.random.random([3, im_res, im_res])
+
+
+# In[ ]:
+
+
+plot_im(im_test, output_path, fname='test_im', tag='', inline=True,
+        ann_text_std_add='Test',
+        mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
+
+
+# In[ ]:
+
+
+plot_im_comp(im_test, 2*im_test, output_path, fname='test_im_comp', tag='', inline=True,
+        ann_text_std_add='MSE = 0.8',
+        mean_unnormalize=pop_mean, std_unnormalize=pop_std0,
+        # ann_margin=False,
+        # left_right_orig_pred=False,
+        )
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
 images, _ = iter(dl_dogs_val).next()
 images_src = images.numpy()
 
