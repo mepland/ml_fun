@@ -583,6 +583,39 @@ def plot_rocs(models, m_path, fname='roc', tag='', dt_start=None, dt_stop=None, 
 	ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x-0.08, ann_text_origin_y=0.96, forced_text_size=12)
 
 ########################################################
+# plot loss(es) vs epoch
+def plot_loss_vs_epoch(dfp_train_results, m_path, fname='loss_vs_epoch', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, x_axis_params=None, y_axis_params=None, loss_cols=['train_loss', 'val_loss'], std_ax_labels=True):
+
+	ann_texts, x_axis_params, y_axis_params = _setup_vars(ann_texts_in, x_axis_params, y_axis_params)
+	if std_ax_labels:
+		x_axis_params['axis_label'] = 'Epoch'
+		y_axis_params['axis_label'] = 'Loss'
+
+	fig, ax = plt.subplots(num=fname)
+
+	# hard coded, but should be fine
+	loss_styles = {'train_loss': {'label': 'Training Loss', 'c': 'C0', 'ls': '--'},
+						'val_loss': {'label': 'Validation Loss', 'c': 'C1', 'ls': ':'}
+						}
+	missing_loss_style = {'label': 'MISSING', 'c': 'red', 'ls': '-'}
+
+	x_values = dfp_train_results['epoch'].values
+	for loss_col in loss_cols:
+		y_values = dfp_train_results[loss_col].values
+		loss_style = loss_styles.get(loss_col, missing_loss_style)
+
+		ax.plot(x_values, y_values, lw=2, label=loss_style['label'], c=loss_style['c'], ls=loss_style['ls'])
+
+	leg = ax.legend(loc='upper right',frameon=False)
+	leg.get_frame().set_facecolor('none')
+
+	clean_ax(ax, x_axis_params, y_axis_params)
+	set_ax_limits(ax, x_axis_params, y_axis_params)
+
+	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
+	ann_and_save(fig, ann_texts, inline, m_path, fname, tag)
+
+########################################################
 def plot_im(im, m_path, fname='im', tag='', dt_start=None, dt_stop=None, inline=False, ann_text_std_add=None, ann_texts_in=None, mean_unnormalize=None, std_unnormalize=None, im_vsize=4, turn_off_axes=True, x_axis_params=None, y_axis_params=None):
 # x_axis_params={'axis_label':None, 'min':None, 'max':None}, y_axis_params={'axis_label':None, 'min':None, 'max':None}
 	if not isinstance(im, np.ndarray):
