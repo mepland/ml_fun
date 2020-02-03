@@ -166,6 +166,12 @@ def clean_ax(_ax, x_axis_params, y_axis_params, turn_off_axes=False):
 		_ax.xaxis.set_tick_params(labelsize=15)
 		_ax.yaxis.set_tick_params(labelsize=15)
 
+		if x_axis_params.get('log', False):
+			_ax.set_xscale('log')
+
+		if y_axis_params.get('log', False):
+			_ax.set_yscale('log')
+
 ########################################################
 def ann_and_save(_fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x, ann_text_origin_y=std_ann_y, forced_text_size=None):
 	if ann_texts is not None:
@@ -347,12 +353,6 @@ def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=
 	clean_ax(ax, x_axis_params, y_axis_params)
 	set_ax_limits(ax, x_axis_params, y_axis_params, allow_maxMult=True)
 
-	if x_axis_params.get('log', False):
-		ax.set_xscale('log')
-
-	# if y_axis_params.get('log', False):
-	#	ax.set_yscale('log')
-
 	if len(leg_objects) > 0:
 		leg = fig.legend(leg_objects, [ob.get_label() for ob in leg_objects], fontsize=18, bbox_to_anchor=(0.7, 0.65, 0.2, 0.2), loc='upper center', ncol=1, borderaxespad=0.)
 		leg.get_frame().set_edgecolor('none')
@@ -413,12 +413,6 @@ range=[[binning.get('x', {}).get('min', None), binning.get('x', {}).get('max', N
 
 	clean_ax(ax, x_axis_params, y_axis_params)
 	set_ax_limits(ax, x_axis_params, y_axis_params)
-
-	if x_axis_params.get('log', False):
-		ax.set_xscale('log')
-
-	if y_axis_params.get('log', False):
-		ax.set_yscale('log')
 
 	ann_texts.append({'label':ann_text_std(dt_start, dt_stop, ann_text_std_add), 'ha':'center'})
 	ann_and_save(fig, ann_texts, inline, m_path, fname, tag, ann_text_origin_x=std_ann_x-0.12)
