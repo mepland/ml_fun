@@ -238,6 +238,17 @@ write_dfp(dfp_train_results, output_path , 'train_results', tag='',
           target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_per_best', 'saved_model', 'cuda_mem_alloc'],
           sort_by=['epoch'], sort_by_ascending=True)
 
+dfp_train_results = load_dfp(output_path, 'train_results', tag='', cols_bool=['saved_model'],
+                             cols_float=['train_loss','val_loss','best_val_loss','delta_per_best'])dfp_train_results
+# In[ ]:
+
+
+plot_loss_vs_epoch(dfp_train_results, output_path, fname='loss_vs_epoch', tag='', inline=False,
+                   ann_text_std_add=None,
+                   y_axis_params={'log': True},
+                   loss_cols=['train_loss', 'val_loss'],
+                  )
+
 
 # In[ ]:
 
@@ -264,35 +275,6 @@ from common_code import *
 
 
 # test_mem()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-dfp_train_results = load_dfp(output_path, 'train_results', tag='', cols_bool=['saved_model'],
-                             cols_float=['train_loss','val_loss','best_val_loss','delta_per_best'])
-
-
-# In[ ]:
-
-
-dfp_train_results
-
-
-# In[ ]:
-
-
-plot_loss_vs_epoch(dfp_train_results, output_path, fname='loss_vs_epoch', tag='', inline=True,
-                   ann_text_std_add=None,
-                   # x_axis_params=None, y_axis_params=None,
-                   loss_cols=['train_loss', 'val_loss'],
-                  )
 
 
 # In[ ]:
