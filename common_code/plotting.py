@@ -218,6 +218,7 @@ def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=
 # x_axis_params={'axis_label':None, 'min':None, 'max':None, 'units': '', 'log': False}, y_axis_params={'axis_label':None, 'min':None, 'max':None, 'maxMult':None, 'log': False, 'show_bin_size': True}
 
 	ann_texts, x_axis_params, y_axis_params = _setup_vars(ann_texts_in, x_axis_params, y_axis_params)
+	x_axis_params['axis_label'] = x_axis_params.get('axis_label', 'Bins')
 
 	bin_edges = binning.get('bin_edges', [])
 	nbins = binning.get('nbins', None)
@@ -247,16 +248,13 @@ def plot_hists(hist_dicts, m_path, fname='hist', tag='', dt_start=None, dt_stop=
 	_bin_max = binning.get('max', _bin_max)
 
 	if (isinstance(bin_edges, list) or isinstance(bin_edges, np.array)) and len(bin_edges) >= 2:
-		# variable size bins from bin_edges
+		# possibly variable size bins from bin_edges
 		nbins = len(bin_edges)-1
 		bin_edges = np.array(bin_edges)
-		bin_size = None
-		bin_size_str = 'Variable'
-		diffs = list(set(np.diff(bin_edges[:-1])))
-		if len(diffs) == 1:
-			# checked the provided bin_edges and they all had the same size (besides the last one which is likely overflow)
-			bin_size = diffs[0]
+		if bin_size is not None:
 			bin_size_str = f'{bin_size:{bin_size_str_fmt}}'
+		else:
+			bin_size_str = 'Variable'
 	elif bin_size is not None and bin_size > 0.:
 		# fixed bin_size
 		nbins = int(round((_bin_max-_bin_min)/bin_size))
