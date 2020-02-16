@@ -17,6 +17,8 @@ sys.path.append(os.path.expanduser('~/ml_fun/'))
 from common_code import *
 get_ipython().run_line_magic('matplotlib', 'inline')
 
+from sklearn.metrics import mean_squared_error
+
 output_path = '../output'
 models_path = '../models'
 
@@ -80,6 +82,7 @@ class_to_idx = OrderedDict({})
 for k,v in ds_all_classes.class_to_idx.items():
     class_to_idx[k.lower()] = v
 class_to_idx = OrderedDict(sorted(class_to_idx.items(), key=lambda x: x))
+idx_to_class = OrderedDict([[v,k] for k,v in class_to_idx.items()])
 
 
 # In[ ]:
@@ -200,12 +203,16 @@ class Autoencoder(nn.Module):
 # In[ ]:
 
 
+loss_fn = nn.MSELoss()
+
+
+# In[ ]:
+
+
 model = Autoencoder()
 model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), weight_decay=1e-5)
-
-loss_fn = nn.MSELoss()
 
 
 # In[ ]:
@@ -228,18 +235,24 @@ do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
 # In[ ]:
 
 
-# dfp_train_results
+write_dfp(dfp_train_results, output_path , 'train_results', tag='',
+          target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_per_best', 'saved_model', 'cuda_mem_alloc'],
+          sort_by=['epoch'], sort_by_ascending=True)
 
 
 # In[ ]:
 
 
-write_dfp(dfp_train_results, output_path , 'train_results', tag='',
-          target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_per_best', 'saved_model', 'cuda_mem_alloc'],
-          sort_by=['epoch'], sort_by_ascending=True)
-
 dfp_train_results = load_dfp(output_path, 'train_results', tag='', cols_bool=['saved_model'],
-                             cols_float=['train_loss','val_loss','best_val_loss','delta_per_best'])dfp_train_results
+                             cols_float=['train_loss','val_loss','best_val_loss','delta_per_best'])
+
+
+# In[ ]:
+
+
+# dfp_train_results
+
+
 # In[ ]:
 
 
@@ -250,16 +263,93 @@ plot_loss_vs_epoch(dfp_train_results, output_path, fname='loss_vs_epoch', tag=''
                   )
 
 
+# ***
+# # Eval
+
+# In[ ]:
+
+
+model = Autoencoder()
+load_model(model, device, 70, 'autoencoder', models_path)
+
+
+# In[ ]:
+
+
+def eval_im_comp(dl, model, loss_fn, device, m_path, fname='im_comp', tag='', idx_to_class=idx_to_class, n_comps=100, mean_unnormalize=pop_mean, std_unnormalize=pop_std0):
+    if not isinstance(loss_fn, nn.modules.loss.MSELoss):
+        raise ValueError('Expected loss_fn == nn.MSELoss(), as individual loss annotation on numpy objects uses MSE. Update code and rerun!')
+
+    model.eval()
+    with torch.no_grad():
+        eval_loss = get_loss(dl, model, loss_fn, device)
+
+        i_comps = 0
+        for (images, classes) in dl:
+            if n_comps <= i_comps:
+                break
+
+            # move labels to cpu
+            classes_np = classes.numpy()
+
+            # move data to device
+            images = images.to(device)
+
+            # evaluate with model
+            outputs = model(images)
+
+            # plot image comparisions, up to n_comps
+            i = 0
+            n_outputs = len(outputs)
+            while i < n_outputs and i_comps < n_comps:
+                idx = classes_np[i]
+                class_name = idx_to_class[idx]
+
+                im_orig = images[i].cpu().numpy()
+                im_pred = outputs[i].cpu().numpy()
+
+                this_loss = np.square(np.subtract(im_orig, im_pred)).mean()
+
+                plot_im_comp(im_orig, im_pred, m_path, fname, tag=f'_{i_comps}_{class_name}{tag}', inline=False,
+                             ann_text_std_add=f'Mean Loss: {eval_loss:.04f}\nLoss: {this_loss:.04f}\n{class_name}',
+                             mean_unnormalize=mean_unnormalize, std_unnormalize=std_unnormalize,
+                             ann_margin=True, left_right_orig_pred=True,
+                            )
+
+                i += 1; i_comps += 1;
+
+
+# In[ ]:
+
+
+# dogs
+eval_im_comp(dl_dogs_val, model, loss_fn, device, f'{output_path}/comps/dogs', fname='im_comp', tag='', n_comps=100)
+
+
 # In[ ]:
 
 
 
 
+# not dogs
+ds_NOT_dogs = torch.utils.data.dataset.Subset(ds_all_classes, np.where(idx_dogs!=1)[0])
+dl_NOT_dogs = torch.utils.data.DataLoader(ds_NOT_dogs, batch_size=batch_size, shuffle=False, num_workers=8)
 
+eval_im_comp(dl_NOT_dogs, model, loss_fn, device, f'{output_path}/comps/not_dogs', fname='im_comp', tag='', n_comps=100)
 # In[ ]:
 
 
-# test_mem()
+# not dogs, individually
+for _class,idx in class_to_idx.items():
+    if _class in possible_dog_classes:
+        continue
+    print(f'Processing {_class}')
+
+    this_idx = torch.tensor(ds_all_classes.targets) == idx
+    ds = torch.utils.data.dataset.Subset(ds_all_classes, np.where(this_idx==1)[0])
+    dl = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=8)
+
+    eval_im_comp(dl, model, loss_fn, device, f'{output_path}/comps/{_class}', fname='im_comp', tag='', n_comps=100)
 
 
 # ***
@@ -286,139 +376,7 @@ from common_code import *
 # In[ ]:
 
 
-im_test = np.random.random([3, im_res, im_res])
 
-
-# In[ ]:
-
-
-plot_im(im_test, output_path, fname='test_im', tag='', inline=True,
-        ann_text_std_add='Test',
-        mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
-
-
-# In[ ]:
-
-
-plot_im_comp(im_test, 2*im_test, output_path, fname='test_im_comp', tag='', inline=True,
-        ann_text_std_add='MSE = 0.8',
-        mean_unnormalize=pop_mean, std_unnormalize=pop_std0,
-        # ann_margin=False,
-        # left_right_orig_pred=False,
-        )
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-images, _ = iter(dl_dogs_val).next()
-images_src = images.numpy()
-
-
-# In[ ]:
-
-
-model = Autoencoder()
-load_model(model, device, 42, 'autoencoder', models_path)
-# load_model(model, device, 1, 'autoencoder', models_path)
-
-
-# In[ ]:
-
-
-outputs = model(images.to(device))
-outputs_cpu = outputs.data.cpu().numpy()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-dogs_index = 10
-
-
-# In[ ]:
-
-
-plot_im(images_src[dogs_index], output_path, fname='im', tag='', inline=True,
-        ann_text_std_add='Original', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
-
-
-# In[ ]:
-
-
-plot_im(outputs_cpu[dogs_index], output_path, fname='im', tag='', inline=True,
-        ann_text_std_add='Decoded', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-ds_NOT_dogs = torch.utils.data.dataset.Subset(ds_all_classes, np.where(idx_dogs!=1)[0])
-dl_NOT_dogs = torch.utils.data.DataLoader(ds_NOT_dogs, batch_size=100, shuffle=False, num_workers=8)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-images, _ = iter(dl_NOT_dogs).next()
-images_src = images.numpy()
-
-
-# In[ ]:
-
-
-outputs = model(images.to(device))
-outputs_cpu = outputs.data.cpu().numpy()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-NOT_dogs_index = 99
-
-
-# In[ ]:
-
-
-plot_im(images_src[NOT_dogs_index], output_path, fname='im', tag='', inline=True,
-        ann_text_std_add='Original', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
-
-
-# In[ ]:
-
-
-plot_im(outputs_cpu[NOT_dogs_index], output_path, fname='im', tag='', inline=True,
-        ann_text_std_add='Decoded', mean_unnormalize=pop_mean, std_unnormalize=pop_std0)
 
 
 # In[ ]:
