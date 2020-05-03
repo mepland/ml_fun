@@ -87,10 +87,10 @@ def get_loss(dl, model, loss_fn, device):
 		# apply model and compute loss using images from the dataloader dl
 		outputs = model(images)
 		loss = loss_fn(outputs, images)
-		total_loss += loss.cpu().data.item() * images.size(0)
+		total_loss += loss.cpu().data.item() * images.size(0) # mean loss of batch * number of images in batch = sum of per image losses
 
 	# Compute the mean loss over all images
-	mean_loss = total_loss / len(dl.dataset)
+	mean_loss = total_loss / len(dl.dataset) # sum of per image losses / n images
 
 	return mean_loss
 
@@ -112,8 +112,7 @@ print_CUDA_MEM=False,
 	epoch_pbar = tqdm(total=max_epochs, desc='Epoch', position=0)
 	for epoch in range(max_epochs):
 		model.train()
-		train_loss = 0.0
-		# for (images, _) in tqdm(dl_train, desc='Minibatch', position=1): # works, but keeps repeting this pbar
+		# for (images, _) in tqdm(dl_train, desc='Minibatch', position=1): # works, but keeps repeating this pbar
 		for (images, _) in dl_train:
 			# Move images to gpu if available
 			images = images.to(device)
@@ -131,14 +130,11 @@ print_CUDA_MEM=False,
 			# Adjust parameters according to the computed gradients
 			optimizer.step()
 
-			# compute loss
-			train_loss += loss.cpu().data.item() * images.size(0)
-
 		if do_decay_lr:
 			decay_lr(optimizer, epoch, initial_lr, lr_epoch_period, lr_n_period_cap)
 
-		# Compute the average acc and loss over all training images
-		train_loss = train_loss / len(dl_train.dataset)
+		# Compute the train_loss here via get_loss, with its own loop through the data, for an apples-to-apples comparison at the end of the epoch's training
+		train_loss = get_loss(dl_train, model, loss_fn, device)
 
 		# Evaluate on the val set
 		val_loss = get_loss(dl_val, model, loss_fn, device)
