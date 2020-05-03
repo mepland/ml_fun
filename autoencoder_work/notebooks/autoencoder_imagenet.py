@@ -204,6 +204,7 @@ class Autoencoder(nn.Module):
 
 
 loss_fn = nn.MSELoss()
+loss_fn_no_reduction = nn.MSELoss(reduction='none')
 
 
 # In[ ]:
@@ -270,27 +271,29 @@ plot_loss_vs_epoch(dfp_train_results, output_path, fname='loss_vs_epoch', tag=''
 
 
 model = Autoencoder()
-load_model(model, device, 70, 'autoencoder', models_path)
+load_model(model, device, 40, 'autoencoder', models_path)
 
 
 # In[ ]:
 
 
-def eval_im_comp(dl, model, loss_fn, device, m_path, fname='im_comp', tag='', idx_to_class=idx_to_class, n_comps=100, mean_unnormalize=pop_mean, std_unnormalize=pop_std0):
+def eval_model(dl, model, loss_fn, loss_fn_no_reduction, device, m_path, fname='im_comp', tag='', n_comps_to_print=50, loss_type='\nLoss is MSE',
+               return_loss_stats=True, report_loss_per_class=True, dl_name=None,
+               idx_to_class=idx_to_class, mean_unnormalize=pop_mean, std_unnormalize=pop_std0):
     if not isinstance(loss_fn, nn.modules.loss.MSELoss):
         raise ValueError('Expected loss_fn == nn.MSELoss(), as individual loss annotation on numpy objects uses MSE. Update code and rerun!')
 
+    class_arrays = []
+    loss_arrays = []
     model.eval()
     with torch.no_grad():
         eval_loss = get_loss(dl, model, loss_fn, device)
 
         i_comps = 0
         for (images, classes) in dl:
-            if n_comps <= i_comps:
-                break
-
             # move labels to cpu
             classes_np = classes.numpy()
+            class_arrays.append(classes_np)
 
             # move data to device
             images = images.to(device)
@@ -298,44 +301,75 @@ def eval_im_comp(dl, model, loss_fn, device, m_path, fname='im_comp', tag='', id
             # evaluate with model
             outputs = model(images)
 
+            loss_per_pixel = loss_fn_no_reduction(outputs, images).cpu().numpy()
+            loss_per_image = np.reshape(loss_per_pixel, (loss_per_pixel.shape[0], -1)).mean(axis=1)
+            loss_arrays.append(loss_per_image)
+
             # plot image comparisions, up to n_comps
             i = 0
             n_outputs = len(outputs)
-            while i < n_outputs and i_comps < n_comps:
+            while i < n_outputs and i_comps < n_comps_to_print:
                 idx = classes_np[i]
                 class_name = idx_to_class[idx]
 
                 im_orig = images[i].cpu().numpy()
                 im_pred = outputs[i].cpu().numpy()
 
-                this_loss = np.square(np.subtract(im_orig, im_pred)).mean()
+                # compute MSE loss in numpy
+                # this_loss = np.square(np.subtract(im_orig, im_pred)).mean()
+
+                # get from earlier calculation
+                this_loss = loss_per_image[i]
 
                 plot_im_comp(im_orig, im_pred, m_path, fname, tag=f'_{i_comps}_{class_name}{tag}', inline=False,
-                             ann_text_std_add=f'Mean Loss: {eval_loss:.04f}\nLoss: {this_loss:.04f}\n{class_name}',
+                             ann_text_std_add=f'Loss: {this_loss:.04f}\nMean Loss: {eval_loss:.04f}{loss_type}\n{class_name.title()}',
                              mean_unnormalize=mean_unnormalize, std_unnormalize=std_unnormalize,
                              ann_margin=True, left_right_orig_pred=True,
                             )
 
                 i += 1; i_comps += 1;
 
+    if return_loss_stats:
+        loss_array = np.concatenate(loss_arrays).ravel()
+
+        def _get_l_stats(la, name=None):
+            l_mean = la.mean()
+            l_stddev = la.std()
+            l_min = la.min()
+            l_max = la.max()
+            l_median = np.median(la)
+
+            return {'name': name, 'l_mean': l_mean, 'l_stddev': l_stddev, 'l_min': l_min, 'l_max': l_max, 'l_median': l_median}
+
+        results = []
+        if report_loss_per_class:
+            class_array = np.concatenate(class_arrays).ravel()
+            idxs = natsorted(list(set(class_array)))
+            for idx in idxs:
+                this_loss_array = loss_array[np.where(class_array==idx)]
+                class_name = idx_to_class[idx]
+                results.append(_get_l_stats(this_loss_array, name=class_name))
+
+        if dl_name is not None:
+            results.append(_get_l_stats(loss_array, name=dl_name))
+
+        return pd.DataFrame(results)[['name', 'l_mean', 'l_stddev', 'l_min', 'l_max', 'l_median']]
+
 
 # In[ ]:
 
 
 # dogs
-eval_im_comp(dl_dogs_val, model, loss_fn, device, f'{output_path}/comps/dogs', fname='im_comp', tag='', n_comps=100)
+dfp_dogs = eval_model(dl_dogs_val, model, loss_fn, loss_fn_no_reduction, device, f'{output_path}/comps/dogs', dl_name='dogs')
+dfp_dogs['dogs'] = 1
 
 
 # In[ ]:
 
 
+dfp_dogs
 
 
-# not dogs
-ds_NOT_dogs = torch.utils.data.dataset.Subset(ds_all_classes, np.where(idx_dogs!=1)[0])
-dl_NOT_dogs = torch.utils.data.DataLoader(ds_NOT_dogs, batch_size=batch_size, shuffle=False, num_workers=8)
-
-eval_im_comp(dl_NOT_dogs, model, loss_fn, device, f'{output_path}/comps/not_dogs', fname='im_comp', tag='', n_comps=100)
 # In[ ]:
 
 
@@ -349,7 +383,48 @@ for _class,idx in class_to_idx.items():
     ds = torch.utils.data.dataset.Subset(ds_all_classes, np.where(this_idx==1)[0])
     dl = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=8)
 
-    eval_im_comp(dl, model, loss_fn, device, f'{output_path}/comps/{_class}', fname='im_comp', tag='', n_comps=100)
+    eval_model(dl, model, loss_fn, loss_fn_no_reduction, device, f'{output_path}/comps/{_class}', return_loss_stats=False)
+
+
+# In[ ]:
+
+
+# not dogs, together
+ds_NOT_dogs = torch.utils.data.dataset.Subset(ds_all_classes, np.where(idx_dogs!=1)[0])
+dl_NOT_dogs = torch.utils.data.DataLoader(ds_NOT_dogs, batch_size=batch_size, shuffle=False, num_workers=8)
+
+
+# In[ ]:
+
+
+dfp_NOT_dogs = eval_model(dl_NOT_dogs, model, loss_fn, loss_fn_no_reduction, device, None, n_comps_to_print=0, dl_name='not_dogs')
+dfp_NOT_dogs['dogs'] = 0
+
+
+# In[ ]:
+
+
+dfp_NOT_dogs
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+dfp_class_results = pd.concat([dfp_dogs, dfp_NOT_dogs])
+
+
+# In[ ]:
+
+
+write_dfp(dfp_class_results, output_path, 'class_results', tag='', target_fixed_cols=['name', 'l_mean', 'l_stddev', 'l_min', 'l_max', 'l_median'],
+          sort_by=None, sort_by_ascending=None,
+         )
 
 
 # ***
@@ -365,12 +440,6 @@ from common_code import *
 
 
 # test_mem()
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:

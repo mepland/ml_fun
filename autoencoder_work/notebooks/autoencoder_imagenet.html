@@ -13405,6 +13405,7 @@ print(f'pop_std0 = {pop_std0}')
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
+<span class="n">loss_fn_no_reduction</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">(</span><span class="n">reduction</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13532,7 +13533,7 @@ print(f'pop_std0 = {pop_std0}')
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Autoencoder</span><span class="p">()</span>
-<span class="n">load_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="s1">&#39;autoencoder&#39;</span><span class="p">,</span> <span class="n">models_path</span><span class="p">)</span>
+<span class="n">load_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;autoencoder&#39;</span><span class="p">,</span> <span class="n">models_path</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13545,21 +13546,23 @@ print(f'pop_std0 = {pop_std0}')
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">eval_im_comp</span><span class="p">(</span><span class="n">dl</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">m_path</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;im_comp&#39;</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">idx_to_class</span><span class="o">=</span><span class="n">idx_to_class</span><span class="p">,</span> <span class="n">n_comps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">mean_unnormalize</span><span class="o">=</span><span class="n">pop_mean</span><span class="p">,</span> <span class="n">std_unnormalize</span><span class="o">=</span><span class="n">pop_std0</span><span class="p">):</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">dl</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">loss_fn_no_reduction</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">m_path</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;im_comp&#39;</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">n_comps_to_print</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">loss_type</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Loss is MSE&#39;</span><span class="p">,</span>
+               <span class="n">return_loss_stats</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">report_loss_per_class</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dl_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">idx_to_class</span><span class="o">=</span><span class="n">idx_to_class</span><span class="p">,</span> <span class="n">mean_unnormalize</span><span class="o">=</span><span class="n">pop_mean</span><span class="p">,</span> <span class="n">std_unnormalize</span><span class="o">=</span><span class="n">pop_std0</span><span class="p">):</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">loss</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Expected loss_fn == nn.MSELoss(), as individual loss annotation on numpy objects uses MSE. Update code and rerun!&#39;</span><span class="p">)</span>
 
+    <span class="n">class_arrays</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">loss_arrays</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
         <span class="n">eval_loss</span> <span class="o">=</span> <span class="n">get_loss</span><span class="p">(</span><span class="n">dl</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
 
         <span class="n">i_comps</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">classes</span><span class="p">)</span> <span class="ow">in</span> <span class="n">dl</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">n_comps</span> <span class="o">&lt;=</span> <span class="n">i_comps</span><span class="p">:</span>
-                <span class="k">break</span>
-
             <span class="c1"># move labels to cpu</span>
             <span class="n">classes_np</span> <span class="o">=</span> <span class="n">classes</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            <span class="n">class_arrays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">classes_np</span><span class="p">)</span>
 
             <span class="c1"># move data to device</span>
             <span class="n">images</span> <span class="o">=</span> <span class="n">images</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
@@ -13567,25 +13570,59 @@ print(f'pop_std0 = {pop_std0}')
             <span class="c1"># evaluate with model</span>
             <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
 
+            <span class="n">loss_per_pixel</span> <span class="o">=</span> <span class="n">loss_fn_no_reduction</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">images</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            <span class="n">loss_per_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">loss_per_pixel</span><span class="p">,</span> <span class="p">(</span><span class="n">loss_per_pixel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">loss_arrays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss_per_image</span><span class="p">)</span>
+
             <span class="c1"># plot image comparisions, up to n_comps</span>
             <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">n_outputs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
-            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n_outputs</span> <span class="ow">and</span> <span class="n">i_comps</span> <span class="o">&lt;</span> <span class="n">n_comps</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n_outputs</span> <span class="ow">and</span> <span class="n">i_comps</span> <span class="o">&lt;</span> <span class="n">n_comps_to_print</span><span class="p">:</span>
                 <span class="n">idx</span> <span class="o">=</span> <span class="n">classes_np</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
                 <span class="n">class_name</span> <span class="o">=</span> <span class="n">idx_to_class</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 
                 <span class="n">im_orig</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
                 <span class="n">im_pred</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
 
-                <span class="n">this_loss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">im_orig</span><span class="p">,</span> <span class="n">im_pred</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                <span class="c1"># compute MSE loss in numpy</span>
+                <span class="c1"># this_loss = np.square(np.subtract(im_orig, im_pred)).mean()</span>
+
+                <span class="c1"># get from earlier calculation</span>
+                <span class="n">this_loss</span> <span class="o">=</span> <span class="n">loss_per_image</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
                 <span class="n">plot_im_comp</span><span class="p">(</span><span class="n">im_orig</span><span class="p">,</span> <span class="n">im_pred</span><span class="p">,</span> <span class="n">m_path</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;_</span><span class="si">{i_comps}</span><span class="s1">_</span><span class="si">{class_name}{tag}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">inline</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                             <span class="n">ann_text_std_add</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Mean Loss: </span><span class="si">{eval_loss:.04f}</span><span class="se">\n</span><span class="s1">Loss: </span><span class="si">{this_loss:.04f}</span><span class="se">\n</span><span class="si">{class_name}</span><span class="s1">&#39;</span><span class="p">,</span>
+                             <span class="n">ann_text_std_add</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Loss: </span><span class="si">{this_loss:.04f}</span><span class="se">\n</span><span class="s1">Mean Loss: </span><span class="si">{eval_loss:.04f}{loss_type}</span><span class="se">\n</span><span class="s1">{class_name.title()}&#39;</span><span class="p">,</span>
                              <span class="n">mean_unnormalize</span><span class="o">=</span><span class="n">mean_unnormalize</span><span class="p">,</span> <span class="n">std_unnormalize</span><span class="o">=</span><span class="n">std_unnormalize</span><span class="p">,</span>
                              <span class="n">ann_margin</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">left_right_orig_pred</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                             <span class="p">)</span>
 
                 <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i_comps</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="n">return_loss_stats</span><span class="p">:</span>
+        <span class="n">loss_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">loss_arrays</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">_get_l_stats</span><span class="p">(</span><span class="n">la</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="n">l_mean</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">l_stddev</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+            <span class="n">l_min</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">l_max</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+            <span class="n">l_median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">la</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s1">&#39;l_mean&#39;</span><span class="p">:</span> <span class="n">l_mean</span><span class="p">,</span> <span class="s1">&#39;l_stddev&#39;</span><span class="p">:</span> <span class="n">l_stddev</span><span class="p">,</span> <span class="s1">&#39;l_min&#39;</span><span class="p">:</span> <span class="n">l_min</span><span class="p">,</span> <span class="s1">&#39;l_max&#39;</span><span class="p">:</span> <span class="n">l_max</span><span class="p">,</span> <span class="s1">&#39;l_median&#39;</span><span class="p">:</span> <span class="n">l_median</span><span class="p">}</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">report_loss_per_class</span><span class="p">:</span>
+            <span class="n">class_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">class_arrays</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="n">natsorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">class_array</span><span class="p">)))</span>
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">idxs</span><span class="p">:</span>
+                <span class="n">this_loss_array</span> <span class="o">=</span> <span class="n">loss_array</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">class_array</span><span class="o">==</span><span class="n">idx</span><span class="p">)]</span>
+                <span class="n">class_name</span> <span class="o">=</span> <span class="n">idx_to_class</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_get_l_stats</span><span class="p">(</span><span class="n">this_loss_array</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">class_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">dl_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_get_l_stats</span><span class="p">(</span><span class="n">loss_array</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">dl_name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">)[[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;l_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;l_stddev&#39;</span><span class="p">,</span> <span class="s1">&#39;l_min&#39;</span><span class="p">,</span> <span class="s1">&#39;l_max&#39;</span><span class="p">,</span> <span class="s1">&#39;l_median&#39;</span><span class="p">]]</span>
 </pre></div>
 
     </div>
@@ -13599,7 +13636,86 @@ print(f'pop_std0 = {pop_std0}')
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># dogs</span>
-<span class="n">eval_im_comp</span><span class="p">(</span><span class="n">dl_dogs_val</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{output_path}</span><span class="s1">/comps/dogs&#39;</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;im_comp&#39;</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">n_comps</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">dfp_dogs</span> <span class="o">=</span> <span class="n">eval_model</span><span class="p">(</span><span class="n">dl_dogs_val</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">loss_fn_no_reduction</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{output_path}</span><span class="s1">/comps/dogs&#39;</span><span class="p">,</span> <span class="n">dl_name</span><span class="o">=</span><span class="s1">&#39;dogs&#39;</span><span class="p">)</span>
+<span class="n">dfp_dogs</span><span class="p">[</span><span class="s1">&#39;dogs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dfp_dogs</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># not dogs, individually</span>
+<span class="k">for</span> <span class="n">_class</span><span class="p">,</span><span class="n">idx</span> <span class="ow">in</span> <span class="n">class_to_idx</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">_class</span> <span class="ow">in</span> <span class="n">possible_dog_classes</span><span class="p">:</span>
+        <span class="k">continue</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Processing </span><span class="si">{_class}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">this_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span> <span class="o">==</span> <span class="n">idx</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Subset</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">this_idx</span><span class="o">==</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">dl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+    <span class="n">eval_model</span><span class="p">(</span><span class="n">dl</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">loss_fn_no_reduction</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{output_path}</span><span class="s1">/comps/</span><span class="si">{_class}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">return_loss_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># not dogs, together</span>
+<span class="n">ds_NOT_dogs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Subset</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">idx_dogs</span><span class="o">!=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">dl_NOT_dogs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">ds_NOT_dogs</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dfp_NOT_dogs</span> <span class="o">=</span> <span class="n">eval_model</span><span class="p">(</span><span class="n">dl_NOT_dogs</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">loss_fn_no_reduction</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_comps_to_print</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dl_name</span><span class="o">=</span><span class="s1">&#39;not_dogs&#39;</span><span class="p">)</span>
+<span class="n">dfp_NOT_dogs</span><span class="p">[</span><span class="s1">&#39;dogs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dfp_NOT_dogs</span>
 </pre></div>
 
     </div>
@@ -13619,27 +13735,28 @@ print(f'pop_std0 = {pop_std0}')
 </div>
 </div>
 
-</div># not dogs
-ds_NOT_dogs = torch.utils.data.dataset.Subset(ds_all_classes, np.where(idx_dogs!=1)[0])
-dl_NOT_dogs = torch.utils.data.DataLoader(ds_NOT_dogs, batch_size=batch_size, shuffle=False, num_workers=8)
-
-eval_im_comp(dl_NOT_dogs, model, loss_fn, device, f'{output_path}/comps/not_dogs', fname='im_comp', tag='', n_comps=100)
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># not dogs, individually</span>
-<span class="k">for</span> <span class="n">_class</span><span class="p">,</span><span class="n">idx</span> <span class="ow">in</span> <span class="n">class_to_idx</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="k">if</span> <span class="n">_class</span> <span class="ow">in</span> <span class="n">possible_dog_classes</span><span class="p">:</span>
-        <span class="k">continue</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Processing </span><span class="si">{_class}</span><span class="s1">&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dfp_class_results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">dfp_dogs</span><span class="p">,</span> <span class="n">dfp_NOT_dogs</span><span class="p">])</span>
+</pre></div>
 
-    <span class="n">this_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span> <span class="o">==</span> <span class="n">idx</span>
-    <span class="n">ds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Subset</span><span class="p">(</span><span class="n">ds_all_classes</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">this_idx</span><span class="o">==</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">dl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+    </div>
+</div>
+</div>
 
-    <span class="n">eval_im_comp</span><span class="p">(</span><span class="n">dl</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{output_path}</span><span class="s1">/comps/</span><span class="si">{_class}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;im_comp&#39;</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">n_comps</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">write_dfp</span><span class="p">(</span><span class="n">dfp_class_results</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="s1">&#39;class_results&#39;</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">target_fixed_cols</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;l_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;l_stddev&#39;</span><span class="p">,</span> <span class="s1">&#39;l_min&#39;</span><span class="p">,</span> <span class="s1">&#39;l_max&#39;</span><span class="p">,</span> <span class="s1">&#39;l_median&#39;</span><span class="p">],</span>
+          <span class="n">sort_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort_by_ascending</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+         <span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13674,19 +13791,6 @@ eval_im_comp(dl_NOT_dogs, model, loss_fn, device, f'{output_path}/comps/not_dogs
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># test_mem()</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
 </pre></div>
 
     </div>
