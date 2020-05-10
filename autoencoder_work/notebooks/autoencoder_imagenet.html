@@ -13126,37 +13126,9 @@ get_ipython().system('{sys.executable} -m pip install -r ../requirements.txt');
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span>
-<span class="n">im_res</span><span class="o">=</span><span class="mi">128</span>
-<span class="n">latent_dim</span> <span class="o">=</span> <span class="mi">7</span> <span class="c1"># Latent Space size</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Compressing from </span><span class="si">{im_res}</span><span class="s1"> x </span><span class="si">{im_res}</span><span class="s1"> to a latent dimension of </span><span class="si">{latent_dim}</span><span class="s1"> x </span><span class="si">{latent_dim}</span><span class="s1">, ie shinking to </span><span class="si">{latent_dim}</span><span class="s1">^2/</span><span class="si">{im_res}</span><span class="s1">^2 = {latent_dim**2 / im_res**2:.2%} of the original size, before expanding back to </span><span class="si">{im_res}</span><span class="s1"> x </span><span class="si">{im_res}</span><span class="s1">&#39;</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># potential good &quot;nominal&quot; classes</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># potential good &quot;nominal&quot; classes, appear simpler and more consistent</span>
 <span class="n">nominal_classes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;manhole_cover&#39;</span><span class="p">,</span> <span class="s1">&#39;car_wheel&#39;</span><span class="p">,</span> <span class="s1">&#39;barometer&#39;</span><span class="p">,</span> <span class="s1">&#39;bottlecap&#39;</span><span class="p">,</span> <span class="s1">&#39;lens_cap&#39;</span><span class="p">,</span> <span class="s1">&#39;puck&#39;</span><span class="p">,</span> <span class="s1">&#39;analog_clock&#39;</span><span class="p">,</span> <span class="s1">&#39;wall_clock&#39;</span><span class="p">,</span> <span class="s1">&#39;coffee_mug&#39;</span><span class="p">,</span> <span class="s1">&#39;coffeepot&#39;</span><span class="p">]</span>
-<span class="n">nominal_class</span> <span class="o">=</span> <span class="n">nominal_classes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">nominal_class</span> <span class="o">=</span> <span class="n">nominal_classes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Running with nominal class: </span><span class="si">{nominal_class}</span><span class="s1">&#39;</span><span class="p">)</span>
 </pre></div>
 
@@ -13170,8 +13142,39 @@ get_ipython().system('{sys.executable} -m pip install -r ../requirements.txt');
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">output_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;../output/</span><span class="si">{nominal_class}</span><span class="s1">_latent_dim_</span><span class="si">{latent_dim}</span><span class="s1">&#39;</span>
-<span class="n">models_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;../models/</span><span class="si">{nominal_class}</span><span class="s1">_latent_dim_</span><span class="si">{latent_dim}</span><span class="s1">&#39;</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">im_res</span><span class="o">=</span><span class="mi">128</span>
+
+<span class="n">model_type</span> <span class="o">=</span> <span class="s1">&#39;AE&#39;</span>
+
+<span class="c1"># Autoencoder (AE)</span>
+<span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span>
+<span class="n">latent_dim</span> <span class="o">=</span> <span class="mi">8</span> <span class="c1"># Latent Space size</span>
+
+<span class="c1"># Variational Autoencoder (VAE)</span>
+<span class="c1"># TODO</span>
+
+<span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;AE&#39;</span><span class="p">:</span>
+    <span class="n">model_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{model_type}</span><span class="s1">_</span><span class="si">{nominal_class}</span><span class="s1">_latent_dim_</span><span class="si">{latent_dim}</span><span class="s1">&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Compressing from </span><span class="si">{im_res}</span><span class="s1"> x </span><span class="si">{im_res}</span><span class="s1"> to a latent dimension of </span><span class="si">{latent_dim}</span><span class="s1"> x </span><span class="si">{latent_dim}</span><span class="s1">, ie shinking to </span><span class="si">{latent_dim}</span><span class="s1">^2/</span><span class="si">{im_res}</span><span class="s1">^2 = {latent_dim**2 / im_res**2:.2%} of the original size, before expanding back to </span><span class="si">{im_res}</span><span class="s1"> x </span><span class="si">{im_res}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="k">elif</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;VAE&#39;</span><span class="p">:</span>
+    <span class="n">model_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{model_type}</span><span class="s1">_</span><span class="si">{nominal_class}</span><span class="s1">_TODO&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;TODO&#39;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unrecognized model_type = </span><span class="si">{model_type}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">output_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;../output/</span><span class="si">{model_name}</span><span class="s1">&#39;</span>
+<span class="n">models_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;../models/</span><span class="si">{model_name}</span><span class="s1">&#39;</span>
 </pre></div>
 
     </div>
@@ -13340,8 +13343,7 @@ print(f'pop_std0 = {pop_std0}')
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Create the model</span>
-<span class="k">class</span> <span class="nc">Autoencoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">class</span> <span class="nc">Autoencoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Autoencoder</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -13397,24 +13399,16 @@ print(f'pop_std0 = {pop_std0}')
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
-<span class="n">loss_fn_no_reduction</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">(</span><span class="n">reduction</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
-</pre></div>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;AE&#39;</span><span class="p">:</span>
+    <span class="n">loss_fn</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
+    <span class="n">loss_fn_no_reduction</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">(</span><span class="n">reduction</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
 
-    </div>
-</div>
-</div>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Autoencoder</span><span class="p">()</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Autoencoder</span><span class="p">()</span>
-<span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-
-<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+<span class="k">elif</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;VAE&#39;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;TODO&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13443,8 +13437,8 @@ print(f'pop_std0 = {pop_std0}')
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">dfp_train_results</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span><span class="n">dl_nominal_train</span><span class="p">,</span> <span class="n">dl_nominal_val</span><span class="p">,</span>
 <span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">loss_fn</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span>
 <span class="n">model_name</span><span class="o">=</span><span class="s1">&#39;autoencoder&#39;</span><span class="p">,</span> <span class="n">models_path</span><span class="o">=</span><span class="n">models_path</span><span class="p">,</span>
-<span class="n">max_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">do_es</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">es_min_val_per_improvement</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">es_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<span class="n">do_decay_lr</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initial_lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">lr_epoch_period</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">lr_n_period_cap</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+<span class="n">max_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">do_es</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">es_min_val_per_improvement</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">es_epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="n">do_decay_lr</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initial_lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">lr_epoch_period</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">lr_n_period_cap</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 
@@ -13467,6 +13461,14 @@ print(f'pop_std0 = {pop_std0}')
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<hr>
+<h1 id="Eval">Eval<a class="anchor-link" href="#Eval">&#182;</a></h1>
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -13515,14 +13517,6 @@ print(f'pop_std0 = {pop_std0}')
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<h1 id="Eval">Eval<a class="anchor-link" href="#Eval">&#182;</a></h1>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
 <h3 id="Load-model-from-disk">Load model from disk<a class="anchor-link" href="#Load-model-from-disk">&#182;</a></h3>
 </div>
 </div>
@@ -13532,7 +13526,7 @@ print(f'pop_std0 = {pop_std0}')
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">best_epoch</span> <span class="o">=</span> <span class="mi">40</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">best_epoch</span> <span class="o">=</span> <span class="n">dfp_train_results</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">dfp_train_results</span><span class="p">[</span><span class="s1">&#39;val_loss&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()][</span><span class="s1">&#39;epoch&#39;</span><span class="p">]</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">Autoencoder</span><span class="p">()</span>
 <span class="n">load_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">best_epoch</span><span class="p">,</span> <span class="s1">&#39;autoencoder&#39;</span><span class="p">,</span> <span class="n">models_path</span><span class="p">)</span>
 </pre></div>
@@ -13776,8 +13770,7 @@ print(f'pop_std0 = {pop_std0}')
 <div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># TODO</span>
-<span class="c1"># interesting_NOT_nominals = [&#39;analog_clock&#39;, &#39;samoyed&#39;, &#39;scuba_diver&#39;]</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">interesting_NOT_nominals</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;analog_clock&#39;</span><span class="p">,</span> <span class="s1">&#39;geyser&#39;</span><span class="p">,</span> <span class="s1">&#39;samoyed&#39;</span><span class="p">,</span> <span class="s1">&#39;scuba_diver&#39;</span><span class="p">,</span> <span class="s1">&#39;comic_book&#39;</span><span class="p">]</span>
 </pre></div>
 
     </div>

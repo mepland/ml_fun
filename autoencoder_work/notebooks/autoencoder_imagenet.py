@@ -31,31 +31,41 @@ print(f'device = {device}')
 # In[ ]:
 
 
-batch_size=256
-im_res=128
-latent_dim = 7 # Latent Space size
-
-
-# In[ ]:
-
-
-print(f'Compressing from {im_res} x {im_res} to a latent dimension of {latent_dim} x {latent_dim}, ie shinking to {latent_dim}^2/{im_res}^2 = {latent_dim**2 / im_res**2:.2%} of the original size, before expanding back to {im_res} x {im_res}')
-
-
-# In[ ]:
-
-
-# potential good "nominal" classes
+# potential good "nominal" classes, appear simpler and more consistent
 nominal_classes = ['manhole_cover', 'car_wheel', 'barometer', 'bottlecap', 'lens_cap', 'puck', 'analog_clock', 'wall_clock', 'coffee_mug', 'coffeepot']
-nominal_class = nominal_classes[0]
+nominal_class = nominal_classes[1]
 print(f'Running with nominal class: {nominal_class}')
 
 
 # In[ ]:
 
 
-output_path = f'../output/{nominal_class}_latent_dim_{latent_dim}'
-models_path = f'../models/{nominal_class}_latent_dim_{latent_dim}'
+im_res=128
+
+model_type = 'AE'
+
+# Autoencoder (AE)
+batch_size=256
+latent_dim = 8 # Latent Space size
+
+# Variational Autoencoder (VAE)
+# TODO
+
+if model_type == 'AE':
+    model_name = f'{model_type}_{nominal_class}_latent_dim_{latent_dim}'
+    print(f'Compressing from {im_res} x {im_res} to a latent dimension of {latent_dim} x {latent_dim}, ie shinking to {latent_dim}^2/{im_res}^2 = {latent_dim**2 / im_res**2:.2%} of the original size, before expanding back to {im_res} x {im_res}')
+elif model_type == 'VAE':
+    model_name = f'{model_type}_{nominal_class}_TODO'
+    print('TODO')
+else:
+    raise ValueError(f'Unrecognized model_type = {model_type}')
+
+
+# In[ ]:
+
+
+output_path = f'../output/{model_name}'
+models_path = f'../models/{model_name}'
 
 
 # In[ ]:
@@ -146,7 +156,6 @@ dl_nominal_train = torch.utils.data.DataLoader(ds_nominal_train, batch_size=batc
 # In[ ]:
 
 
-# Create the model
 class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder,self).__init__()
@@ -196,17 +205,16 @@ class Autoencoder(nn.Module):
 # In[ ]:
 
 
-loss_fn = nn.MSELoss()
-loss_fn_no_reduction = nn.MSELoss(reduction='none')
+if model_type == 'AE':
+    loss_fn = nn.MSELoss()
+    loss_fn_no_reduction = nn.MSELoss(reduction='none')
 
+    model = Autoencoder()
+    model.to(device)
 
-# In[ ]:
-
-
-model = Autoencoder()
-model.to(device)
-
-optimizer = torch.optim.Adam(model.parameters(), weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), weight_decay=1e-5)
+elif model_type == 'VAE':
+    print('TODO')
 
 
 # In[ ]:
@@ -221,8 +229,8 @@ optimizer = torch.optim.Adam(model.parameters(), weight_decay=1e-5)
 dfp_train_results = train_model(dl_nominal_train, dl_nominal_val,
 model, optimizer, loss_fn, device,
 model_name='autoencoder', models_path=models_path,
-max_epochs=100, do_es=True, es_min_val_per_improvement=0.01, es_epochs=5,
-do_decay_lr=True, initial_lr=0.001, lr_epoch_period=30, lr_n_period_cap=6,
+max_epochs=100, do_es=True, es_min_val_per_improvement=0.005, es_epochs=10,
+do_decay_lr=True, initial_lr=0.001, lr_epoch_period=25, lr_n_period_cap=6,
 )
 
 
@@ -233,6 +241,9 @@ write_dfp(dfp_train_results, output_path , 'train_results', tag='',
           target_fixed_cols=['epoch', 'train_loss', 'val_loss', 'best_val_loss', 'delta_per_best', 'saved_model', 'cuda_mem_alloc'],
           sort_by=['epoch'], sort_by_ascending=True)
 
+
+# ***
+# # Eval
 
 # In[ ]:
 
@@ -257,15 +268,12 @@ plot_loss_vs_epoch(dfp_train_results, output_path, fname='loss_vs_epoch', tag=''
                   )
 
 
-# ***
-# # Eval
-
 # ### Load model from disk
 
 # In[ ]:
 
 
-best_epoch = 40
+best_epoch = dfp_train_results.iloc[dfp_train_results['val_loss'].idxmin()]['epoch']
 model = Autoencoder()
 load_model(model, device, best_epoch, 'autoencoder', models_path)
 
@@ -425,8 +433,7 @@ dfp_class_results.tail(15)
 # In[ ]:
 
 
-# TODO
-# interesting_NOT_nominals = ['analog_clock', 'samoyed', 'scuba_diver']
+interesting_NOT_nominals = ['analog_clock', 'geyser', 'samoyed', 'scuba_diver', 'comic_book']
 
 
 # In[ ]:
