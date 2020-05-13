@@ -138,14 +138,14 @@ if __name__ == '__main__':
 
 	# do some sanity checking
 	if target_res < 16 or 2048 < target_res:
-		raise ValueError('Are you sure you want to run with an output image size of {target_res}? If so, you will have to edit the code...')
+		raise ValueError(f'Are you sure you want to run with an output image size of {target_res}? If so, you will have to edit the code...')
 
 	if resampling_algo not in resampling_algos.keys():
-		raise ValueError('Unknown resampling algorithm {resampling_algo}!')
+		raise ValueError(f'Unknown resampling algorithm {resampling_algo}!')
 
 	n_cores = mp.cpu_count()
 	if n_processes > n_cores:
-		raise ValueError('Trying to use {n_processes} processes but only have {n_cores} cores!')
+		raise ValueError(f'Trying to use {n_processes} processes but only have {n_cores} cores!')
 
 	########################################################
 	# build helper dicts from map_clsloc.txt
