@@ -9,6 +9,8 @@ matplotlib
 # seaborn
 palettable
 
+pillow
+
 tqdm
 natsort
 humanize
@@ -17,6 +19,6 @@ torch
 torchvision
 
 # xgboost
-# scikit-learn
+scikit-learn
 
 # networkx
