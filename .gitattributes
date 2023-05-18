@@ -1,0 +1,5 @@
+# ignore all html in diffs and github languages stats
+*.html linguist-generated=true
+# ignore specific .py files linked to jupyter notebooks in github languages stats
+Simple_CNN/Simple_CNN_demo_CIFAR10.py linguist-documentation=true
+autoencoder_work/notebooks/autoencoder_imagenet.py linguist-documentation=true
